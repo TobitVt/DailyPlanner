@@ -53,34 +53,6 @@ A personalized desktop daily planner built with C++ and Qt. The application comb
 - REST APIs
 - JSON
 
-## Project Structure
-
-```text
-DailyPlanner/
-│
-├── CMakeLists.txt
-├── README.md
-├── .gitignore
-│
-├── src/
-│   ├── main.cpp
-│   │
-│   ├── models/
-│   ├── database/
-│   ├── services/
-│   ├── ui/
-│   └── utils/
-│
-├── resources/
-│   ├── icons/
-│   ├── images/
-│   └── styles/
-│
-├── database/
-│   └── schema.sql
-│
-└── docs/
-```
 
 ## Planned Features
 
