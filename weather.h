@@ -24,4 +24,6 @@ struct WeatherData {
     QString errorMessage;
 };
 
-WeatherData getWeatherForecast(const QString &url);
+WeatherData getData(const QString &url);
+void getWeatherSummary(QString Loc);
+void getForecast(QString Loc);
