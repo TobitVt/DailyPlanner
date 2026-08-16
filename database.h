@@ -9,6 +9,6 @@ public:
 
     bool isOpen() const;
 
-// private:
-//     bool createTables();
+private:
+    bool createTables();
 };

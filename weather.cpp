@@ -72,8 +72,7 @@ WeatherData getData(const QString &url)
 void getWeatherSummary(QString Loc)
 {
     QString apiKey = qEnvironmentVariable("OPENWEATHER_API_KEY");
-    QString city = Loc;
-    QString url = QString("https://api.openweathermap.org/data/2.5/forecast?q=%1&units=metric&appid=%2").arg(city, apiKey);
+    QString url = QString("https://api.openweathermap.org/data/2.5/forecast?q=%1&units=metric&appid=%2").arg(Loc, apiKey);
     
     WeatherData weather = getData(url);
 
@@ -109,7 +108,7 @@ void getWeatherSummary(QString Loc)
 
             if (currentDay == fcDay)
             {
-                if (std::abs(currentHour - fcHour) < 3)
+                if (std::abs(currentHour - fcHour) <= 3)
                 {
                     out += QString::number(forecast[i].temp) + "°C" + "\n";
                     out += forecast[i].description + "\n";
@@ -154,8 +153,7 @@ void getWeatherSummary(QString Loc)
 void getForecast(QString Loc)
 {
     QString apiKey = qEnvironmentVariable("OPENWEATHER_API_KEY");
-    QString city = Loc;
-    QString url = QString("https://api.openweathermap.org/data/2.5/forecast?q=%1&units=metric&appid=%2").arg(city, apiKey);
+    QString url = QString("https://api.openweathermap.org/data/2.5/forecast?q=%1&units=metric&appid=%2").arg(Loc, apiKey);
     
     WeatherData weather = getData(url);
 

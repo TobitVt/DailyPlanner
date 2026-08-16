@@ -11,6 +11,8 @@
 
 #include "todoList.h"
 #include "weather.h"
+#include "database.h"
+#include "verse.h"
 
 //set up database
 //daily verse
@@ -22,8 +24,14 @@ int main(int argc, char *argv[]) {
 
     QCoreApplication app(argc, argv);
 
+    Database plannerDB("planner.db"); 
+
     getWeatherSummary("Pretoria");
     getForecast("Pretoria");
+
+    // QString verseID = getpassageID();
+
+    getDailyVerse();
 
 
 

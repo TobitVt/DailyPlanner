@@ -17,6 +17,7 @@ add_executable(TodoList
     todoList.cpp
     weather.cpp
     database.cpp
+    verse.cpp
 )
 target_link_libraries(TodoList PRIVATE Qt6::Core Qt6::Network Qt6::Sql)
 
