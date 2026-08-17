@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
+#include <QMap>
 
 struct prod {
     QByteArray calendar;              
