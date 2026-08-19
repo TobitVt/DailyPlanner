@@ -79,7 +79,7 @@ bool Database::createTables() {
         "CREATE TABLE IF NOT EXISTS productivity ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
         "user_id INTEGER NOT NULL, "
-        "calender BLOB, "
+        "calendar BLOB, "
         "hourly_tasks TEXT, "
         "todoList TEXT, "
         "FOREIGN KEY (user_id) REFERENCES user(id)"
@@ -93,30 +93,56 @@ bool Database::createTables() {
     return true;
 }
 
- bool Database::createUser(userInfo user) const
+bool Database::createUser(userInfo user) const
 {
     QSqlQuery query;
-    
+
     query.prepare("INSERT INTO user (userName, password, homeCity, work) "
-                  "VALUES (:username, :password, :homeCity, :work);");
-    
+                  "VALUES (:username, :password, :homeCity, :work)");
+
     query.bindValue(":username", user.username);
     query.bindValue(":password", user.password);
     query.bindValue(":homeCity", user.homeCity);
-    query.bindValue(":work",     user.work);
-    
-    return query.exec();
+    query.bindValue(":work", user.work);
+
+    if (!query.exec())
+    {
+        qDebug() << "Failed to create user:"
+                 << query.lastError().text();
+        return false;
+    }
+
+    int userId = query.lastInsertId().toInt();
+
+    QSqlQuery productivityQuery;
+
+    productivityQuery.prepare("INSERT INTO productivity (user_id, calendar, hourly_tasks, todoList) "
+                              "VALUES (:user_id, :calendar, :hourly_tasks, :todoList)");
+
+    productivityQuery.bindValue(":user_id", userId);
+    productivityQuery.bindValue(":calendar", QByteArray());
+    productivityQuery.bindValue(":hourly_tasks", serializeHourlyTasks({}));
+    productivityQuery.bindValue(":todoList", serializeTodoList({}));
+
+    if (!productivityQuery.exec())
+    {
+        qDebug() << "Failed to create productivity record:"
+                 << productivityQuery.lastError().text();
+        return false;
+    }
+
+    return true;
 }
 
-userInfo Database::getUser(QString uName)
+userInfo Database::getAllInfo(QString uName)
 {
     QSqlQuery query;
     userInfo temp;
     temp.username = uName;
 
-    query.prepare("SELECT u.homeCity, u.work, p.calender, p.hourly_tasks, p.todoList "
+    query.prepare("SELECT u.homeCity, u.work, p.calendar, p.hourly_tasks, p.todoList "
     "FROM user u "
-    "JOIN productivity p ON u.id = p.id "
+    "JOIN productivity p ON u.id = p.user_id "
     "WHERE u.userName = :username");
 
     query.bindValue(":username", uName);
@@ -145,4 +171,49 @@ userInfo Database::getUser(QString uName)
 
 
 
+}
+
+bool Database::saveTodoList(QStringList todo, userInfo u)
+{
+    QSqlQuery query;
+    
+    query.prepare("UPDATE productivity "
+                "SET todoList = :todoList "
+                "WHERE id = (SELECT id FROM user WHERE userName = :username);");
+    
+    query.bindValue(":todoList", serializeTodoList(todo));
+    query.bindValue(":username", u.username);
+
+    
+    return query.exec();
+}
+
+bool Database::saveHourlyTasks(QMap<int, QString> hourly, userInfo u)
+{
+    QSqlQuery query;
+    
+    query.prepare("UPDATE productivity "
+                "SET hourly_tasks = :hourly_tasks "
+                "WHERE id = (SELECT id FROM user WHERE userName = :username);");
+        
+    query.bindValue(":hourly_tasks", serializeHourlyTasks(hourly));
+    query.bindValue(":username", u.username);
+
+    
+    return query.exec();
+}
+
+bool Database::saveCalendar(QByteArray cal, userInfo u)
+{
+    QSqlQuery query;
+    
+    query.prepare("UPDATE productivity "
+                "SET calendar = :calendar "
+                "WHERE id = (SELECT id FROM user WHERE userName = :username);");
+    
+    query.bindValue(":calendar", cal);
+    query.bindValue(":username", u.username);
+
+    
+    return query.exec();
 }

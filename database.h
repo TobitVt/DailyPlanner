@@ -24,8 +24,13 @@ public:
     ~Database();
 
     bool isOpen() const;
+
     bool createUser(userInfo user) const;
-    userInfo getUser(QString uName);
+    userInfo getAllInfo(QString uName);
+
+    bool saveTodoList(QStringList todo, userInfo u);
+    bool saveHourlyTasks(QMap<int, QString> hourly, userInfo u);
+    bool saveCalendar(QByteArray cal, userInfo u);
 
 
 
