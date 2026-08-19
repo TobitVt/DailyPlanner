@@ -14,11 +14,12 @@
 #include "database.h"
 #include "verse.h"
 
-//set up database
-//daily verse
 //set up calender class
 // set up daily hourly schedule
 // set up reminders
+//set up GUI
+//set up log in/ sign up
+//set up user auth
 
 int main(int argc, char *argv[]) {
 
@@ -28,8 +29,6 @@ int main(int argc, char *argv[]) {
 
     getWeatherSummary("Pretoria");
     getForecast("Pretoria");
-
-    // QString verseID = getpassageID();
 
     getDailyVerse();
 

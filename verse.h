@@ -11,5 +11,4 @@ struct verseData
 };
 
 
-// QString getpassageID();
 void getDailyVerse();
