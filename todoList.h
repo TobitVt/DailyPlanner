@@ -1,33 +1,48 @@
 #pragma once
 
-#include <iostream>
-#include <fstream>
-#include <vector>
+#include <QString>
+#include <QVector>
+#include <QDateTime>
 
-#include "database.h"
+enum class TaskPriority {
+    Low,
+    Medium,
+    High
+};
 
-class todoList {
-private:
-    std::string listName;
-    std::vector<std::string> list_vect;
+struct Task {
+    QString description;
+    bool done = false;
+    QDateTime dueDate;      
+    TaskPriority priority = TaskPriority::Medium;
+};
 
+class TodoList {
 public:
-    todoList(std::string LN);
+    TodoList();
 
-    void createTodoList();
-    std::vector<std::string>& getTodoList();
+    int addTask(const QString& description,
+                TaskPriority priority = TaskPriority::Medium,
+                const QDateTime& dueDate = QDateTime());
 
-    void updateList();
-
-    void addTask(QString task);
     void removeTask(int index);
-    void completeTask(int index);
+    void setDone(int index, bool done = true);
+    void setPriority(int index, TaskPriority priority);
+    void setDueDate(int index, const QDateTime& dueDate);
 
-    void printList() const;
-    bool isEmpty();
+    const QVector<Task>& tasks() const;
+    QVector<Task> incompleteTasks() const;
+    QVector<Task> completedTasks() const;
 
-    void save(Database& db);
+    bool isEmpty() const;
+    int count() const;
 
-    ~todoList();
+    void clear();
 
+    // Serialization for storage in the Database class
+    QString toJson() const;
+    static TodoList fromJson(const QString& json);
+
+private:
+    QVector<Task> m_tasks;
 };
