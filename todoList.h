@@ -13,7 +13,7 @@ enum class TaskPriority {
 struct Task {
     QString description;
     bool done = false;
-    QDateTime dueDate;      // invalid QDateTime = no due date set
+    QDateTime dueDate;      
     TaskPriority priority = TaskPriority::Medium;
 };
 
@@ -40,7 +40,6 @@ public:
     void clear();
 
     // Serialization for storage in the Database class
-    // (matches the `todoList TEXT` column).
     QString toJson() const;
     static TodoList fromJson(const QString& json);
 

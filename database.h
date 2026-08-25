@@ -1,13 +1,17 @@
 #pragma once
 
+#include "hourlySchedule.h"
+#include "calendar.h"
+#include "todoList.h"
+
 #include <QString>
 #include <QStringList>
 #include <QMap>
 
 struct prod {
-    QByteArray calendar;              
-    QStringList todoList;             
-    QMap<int, QString> hourlyTasks;
+    Calendar calendar;              
+    TodoList todoList;             
+    HourlySchedules HourlySchedules;
 };
 
 struct userInfo{
@@ -29,7 +33,7 @@ public:
     userInfo getAllInfo(QString uName);
 
     bool saveTodoList(QStringList todo, userInfo u);
-    bool saveHourlyTasks(QMap<int, QString> hourly, userInfo u);
+    bool saveHourlySchedules(QMap<int, QString> hourly, userInfo u);
     bool saveCalendar(QByteArray cal, userInfo u);
 
 

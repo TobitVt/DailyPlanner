@@ -9,33 +9,33 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
-QString serializeTodoList(const QStringList& list) {
-    return QJsonDocument(QJsonArray::fromStringList(list)).toJson(QJsonDocument::Compact);
-}
+// QString serializeTodoList(const QStringList& list) {
+//     return QJsonDocument(QJsonArray::fromStringList(list)).toJson(QJsonDocument::Compact);
+// }
 
-QStringList deserializeTodoList(const QString& json) {
-    QJsonArray arr = QJsonDocument::fromJson(json.toUtf8()).array();
-    QStringList list;
-    for (const auto& v : arr) list << v.toString();
-    return list;
-}
+// QStringList deserializeTodoList(const QString& json) {
+//     QJsonArray arr = QJsonDocument::fromJson(json.toUtf8()).array();
+//     QStringList list;
+//     for (const auto& v : arr) list << v.toString();
+//     return list;
+// }
 
-QString serializeHourlyTasks(const QMap<int, QString>& tasks) {
-    QJsonObject obj;
-    for (auto it = tasks.constBegin(); it != tasks.constEnd(); ++it) {
-        obj[QString::number(it.key())] = it.value();
-    }
-    return QJsonDocument(obj).toJson(QJsonDocument::Compact);
-}
+// QString serializeHourlySchedules(const QMap<int, QString>& tasks) {
+//     QJsonObject obj;
+//     for (auto it = tasks.constBegin(); it != tasks.constEnd(); ++it) {
+//         obj[QString::number(it.key())] = it.value();
+//     }
+//     return QJsonDocument(obj).toJson(QJsonDocument::Compact);
+// }
 
-QMap<int, QString> deserializeHourlyTasks(const QString& json) {
-    QJsonObject obj = QJsonDocument::fromJson(json.toUtf8()).object();
-    QMap<int, QString> tasks;
-    for (auto it = obj.constBegin(); it != obj.constEnd(); ++it) {
-        tasks[it.key().toInt()] = it.value().toString();
-    }
-    return tasks;
-}
+// QMap<int, QString> deserializeHourlySchedules(const QString& json) {
+//     QJsonObject obj = QJsonDocument::fromJson(json.toUtf8()).object();
+//     QMap<int, QString> tasks;
+//     for (auto it = obj.constBegin(); it != obj.constEnd(); ++it) {
+//         tasks[it.key().toInt()] = it.value().toString();
+//     }
+//     return tasks;
+// }
 
 
 Database::Database(const QString& dbPath) {
@@ -121,8 +121,8 @@ bool Database::createUser(userInfo user) const
 
     productivityQuery.bindValue(":user_id", userId);
     productivityQuery.bindValue(":calendar", QByteArray());
-    productivityQuery.bindValue(":hourly_tasks", serializeHourlyTasks({}));
-    productivityQuery.bindValue(":todoList", serializeTodoList({}));
+    productivityQuery.bindValue(":hourly_tasks", user.productivity.HourlySchedules.toJson());
+    productivityQuery.bindValue(":todoList", user.productivity.todoList.toJson());
 
     if (!productivityQuery.exec())
     {
@@ -153,9 +153,9 @@ userInfo Database::getAllInfo(QString uName)
         {
             temp.homeCity = query.value(0).toString();
             temp.work = query.value(1).toString();
-            temp.productivity.calendar = query.value(2).toByteArray();
-            temp.productivity.hourlyTasks = deserializeHourlyTasks(query.value(3).toString());
-            temp.productivity.todoList = deserializeTodoList(query.value(4).toString());
+            temp.productivity.calendar = Calendar::fromJson(query.value(2).toByteArray());
+            temp.productivity.HourlySchedules = HourlySchedules::fromJson(query.value(3).toString(), QDate::currentDate());
+            temp.productivity.todoList = TodoList::fromJson(query.value(4).toString());
         }
         else
         {
@@ -181,14 +181,14 @@ bool Database::saveTodoList(QStringList todo, userInfo u)
                 "SET todoList = :todoList "
                 "WHERE id = (SELECT id FROM user WHERE userName = :username);");
     
-    query.bindValue(":todoList", serializeTodoList(todo));
+    query.bindValue(":todoList", u.productivity.todoList.toJson());
     query.bindValue(":username", u.username);
 
     
     return query.exec();
 }
 
-bool Database::saveHourlyTasks(QMap<int, QString> hourly, userInfo u)
+bool Database::saveHourlySchedules(QMap<int, QString> hourly, userInfo u)
 {
     QSqlQuery query;
     
@@ -196,7 +196,7 @@ bool Database::saveHourlyTasks(QMap<int, QString> hourly, userInfo u)
                 "SET hourly_tasks = :hourly_tasks "
                 "WHERE id = (SELECT id FROM user WHERE userName = :username);");
         
-    query.bindValue(":hourly_tasks", serializeHourlyTasks(hourly));
+    query.bindValue(":hourly_tasks", u.productivity.HourlySchedules.toJson());
     query.bindValue(":username", u.username);
 
     

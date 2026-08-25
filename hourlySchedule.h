@@ -4,6 +4,8 @@
 #include <QMap>
 #include <QDate>
 
+#include "database.h"
+
 struct HourlyTask {
     QString description;
     bool done = false;
@@ -27,12 +29,10 @@ public:
 
     void clear();
 
-    // Serialization for storage in the Database class
-    // (matches the `hourly_tasks TEXT` column).
     QString toJson() const;
     static HourlySchedules fromJson(const QString& json, const QDate& date = QDate());
 
 private:
     QDate m_date;
-    QMap<int, HourlyTask> m_tasks; // key: hour, 0-23
+    QMap<int, HourlyTask> m_tasks; 
 };

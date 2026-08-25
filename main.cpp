@@ -14,9 +14,7 @@
 #include "database.h"
 #include "verse.h"
 
-//set up calender class
-// set up daily hourly schedule
-// set up reminders
+
 //set up GUI
 //set up log in/ sign up
 //set up user auth
@@ -36,44 +34,4 @@ int main(int argc, char *argv[]) {
 
     return app.exec();
 }  
-
-    // todoList myTodoList("todoList");
-
-    // myTodoList.createTodoList();
- 
-    // while (true)
-    // {
-    //     std::vector<std::string>& todo_vect = myTodoList.getTodoList();
-
-    //     std::cout << std::endl << "please select the tasks you have completed(1 - " << todo_vect.size() <<"): ";
-    //     myTodoList.printList();
-
-    //     int done;
-    //     std::cin >> done;
-
-    //     bool found = false;
-
-    //     for (size_t i = 0; i < todo_vect.size(); i++)
-    //     {
-    //         int taskNumber = stoi(todo_vect[i]);
-
-    //         if (done == taskNumber)
-    //         {
-    //             todo_vect.erase(todo_vect.begin() + i);
-    //             myTodoList.updateList();
-    //             found = true;
-    //             break;
-    //         }
-    //     }
-
-    //     if (!found)
-    //     {
-    //         std::cout << "\nInvalid task number.\n";
-    //     }
-
-
-    //     if (myTodoList.isEmpty()) {break;}
-
-    // }
-
 

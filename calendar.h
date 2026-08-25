@@ -17,8 +17,7 @@ class Calendar {
 public:
     Calendar();
 
-    // Import events from a raw .ics file's contents (parsed from disk elsewhere,
-    // or read directly via importFromFile).
+    // Import events from a raw .ics file's contents
     bool importFromIcsText(const QString& icsText);
     bool importFromFile(const QString& filePath);
 
@@ -31,8 +30,7 @@ public:
     QVector<CalendarEvent> eventsOnDate(const QDate& date) const;
     QVector<CalendarEvent> upcomingEvents(int maxCount = 5) const;
 
-    // Serialization for storage in the Database class (matches the
-    // `calendar BLOB` column — stored as raw UTF-8 JSON bytes).
+    // Serialization for storage in the Database class 
     QByteArray toJson() const;
     static Calendar fromJson(const QByteArray& data);
 
