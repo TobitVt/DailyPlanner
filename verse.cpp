@@ -14,56 +14,75 @@
 #include <QJsonObject>
 #include <QDate>
 
-void getDailyVerse()
+QString getDailyVerse()
 {
+    QString result;
+
     int dayOfYear = QDate::currentDate().dayOfYear();
+
     QString votdUrl = QString("https://api.youversion.com/v1/verse_of_the_days/%1").arg(dayOfYear);
+
+    QNetworkAccessManager manager;
 
     QNetworkRequest votdRequest{QUrl(votdUrl)};
     votdRequest.setRawHeader("x-yvp-app-key", qEnvironmentVariable("YOUVERSION_API_KEY").toUtf8());
 
-    QNetworkAccessManager* manager = new QNetworkAccessManager();
-    QNetworkReply* votdReply = manager->get(votdRequest);
+    QNetworkReply* votdReply = manager.get(votdRequest);
 
-    QObject::connect(votdReply, &QNetworkReply::finished, [votdReply, manager]() {
-        if (votdReply->error() != QNetworkReply::NoError) {
-            qDebug() << "Error fetching verse of the day:" << votdReply->errorString();
-            votdReply->deleteLater();
-            return;
-        }
+    QEventLoop loop;
 
-        QJsonDocument votdDoc = QJsonDocument::fromJson(votdReply->readAll());
-        QString passageId = votdDoc.object().value("passage_id").toString();
+    QObject::connect(votdReply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+
+    loop.exec();
+
+    if (votdReply->error() != QNetworkReply::NoError)
+    {
+        qDebug() << "Error fetching verse of the day:" << votdReply->errorString();
         votdReply->deleteLater();
+        return "";
+    }
 
-        if (passageId.isEmpty()) {
-            qDebug() << "No passage_id in response.";
-            return;
-        }
+    QJsonDocument votdDoc = QJsonDocument::fromJson(votdReply->readAll());
 
+    QString passageId = votdDoc.object().value("passage_id").toString();
 
-        QString passageUrl = QString("https://api.youversion.com/v1/bibles/3034/passages/%1").arg(passageId);
+    votdReply->deleteLater();
 
-        QNetworkRequest passageRequest{QUrl(passageUrl)};
-        passageRequest.setRawHeader("x-yvp-app-key", qEnvironmentVariable("YOUVERSION_API_KEY").toUtf8());
+    if (passageId.isEmpty())
+    {
+        qDebug() << "No passage_id in response.";
+        return "";
+    }
 
-        QNetworkReply* passageReply = manager->get(passageRequest);
+    QString passageUrl = QString("https://api.youversion.com/v1/bibles/3034/passages/%1").arg(passageId);
 
-        QObject::connect(passageReply, &QNetworkReply::finished, [passageReply, manager, passageId]() {
-            if (passageReply->error() != QNetworkReply::NoError) {
-                qDebug() << "Error fetching passage text:" << passageReply->errorString();
-            } else {
-                QJsonDocument passageDoc = QJsonDocument::fromJson(passageReply->readAll());
-                QJsonObject obj = passageDoc.object();
+    QNetworkRequest passageRequest{QUrl(passageUrl)};
 
-                QString content = obj.value("content").toString();
-                QString reference = obj.value("reference").toString();
+    passageRequest.setRawHeader("x-yvp-app-key", qEnvironmentVariable("YOUVERSION_API_KEY").toUtf8());
 
-                qDebug().noquote() << reference << "-" << content;
-            }
+    QNetworkReply* passageReply = manager.get(passageRequest);
 
-            passageReply->deleteLater();
-            manager->deleteLater();
-        });
-    });
+    QObject::connect(passageReply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+
+    loop.exec();
+
+    if (passageReply->error() != QNetworkReply::NoError)
+    {
+        qDebug() << "Error fetching passage text:" << passageReply->errorString();
+        passageReply->deleteLater();
+        return "";
+    }
+
+    QJsonDocument passageDoc = QJsonDocument::fromJson(passageReply->readAll());
+    QJsonObject obj = passageDoc.object();
+
+    QString content = obj.value("content").toString();
+
+    QString reference = obj.value("reference").toString();
+
+    result = reference + " - " + content;
+
+    passageReply->deleteLater();
+
+    return result;
 }
