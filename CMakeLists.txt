@@ -28,5 +28,11 @@ add_executable(DailyPlannerGui
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
+    todoList.cpp
+    weather.cpp
+    database.cpp
+    verse.cpp
+    calendar.cpp
+    hourlySchedule.cpp
 )
 target_link_libraries(DailyPlannerGui PRIVATE Qt6::Widgets Qt6::Core Qt6::Network Qt6::Sql)
