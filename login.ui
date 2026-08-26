@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>LoginScreen</class>
+ <widget class="QWidget" name="LoginScreen">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>400</width><height>550</height></rect>
+  </property>
+  <property name="windowTitle"><string>Login</string></property>
+  <property name="styleSheet">
+   <string notr="true">
+    QWidget#LoginScreen { background-color: #1e1e24; }
+    QLabel { color: #ffffff; font-family: 'Segoe UI', sans-serif; }
+    QLabel#titleLabel { font-size: 24px; font-weight: bold; }
+    QLineEdit { background-color: #2d2d34; color: #ffffff; border: 2px solid transparent; border-radius: 6px; padding: 10px 12px; font-size: 14px; }
+    QLineEdit:focus { border: 2px solid #007acc; background-color: #33333b; }
+    QPushButton { font-family: 'Segoe UI', sans-serif; font-size: 14px; font-weight: bold; border-radius: 6px; padding: 12px; }
+    QPushButton#submitButton { background-color: #007acc; color: white; border: none; }
+    QPushButton#submitButton:hover { background-color: #0098ff; }
+    QPushButton#backButton { background-color: transparent; color: #aaaaaa; border: none; }
+    QPushButton#backButton:hover { color: #ffffff; }
+   </string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>18</number></property>
+   <property name="leftMargin"><number>40</number></property>
+   <property name="rightMargin"><number>40</number></property>
+   <item>
+    <widget class="QLabel" name="titleLabel">
+     <property name="text"><string>Sign In</string></property>
+     <property name="alignment"><set>Qt::AlignCenter</set></property>
+    </widget>
+   </item>
+   <item><widget class="QLineEdit" name="usernameEdit"><property name="placeholderText"><string>Username or Email</string></property></widget></item>
+   <item><widget class="QLineEdit" name="passwordEdit"><property name="echoMode"><enum>QLineEdit::Password</enum></property><property name="placeholderText"><string>Password</string></property></widget></item>
+   <item><widget class="QPushButton" name="submitButton"><property name="text"><string>Log In</string></property></widget></item>
+   <item><widget class="QPushButton" name="backButton"><property name="text"><string>← Back to Home</string></property></widget></item>
+  </layout>
+ </widget>
+</ui>

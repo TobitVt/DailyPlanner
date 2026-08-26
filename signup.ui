@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SignUpScreen</class>
+ <widget class="QWidget" name="SignUpScreen">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>400</width><height>550</height></rect>
+  </property>
+  <property name="windowTitle"><string>Register</string></property>
+  <property name="styleSheet">
+   <string notr="true">
+    QWidget#SignUpScreen { background-color: #1e1e24; }
+    QLabel { color: #ffffff; font-family: 'Segoe UI', sans-serif; }
+    QLabel#titleLabel { font-size: 24px; font-weight: bold; }
+    QLineEdit { background-color: #2d2d34; color: #ffffff; border: 2px solid transparent; border-radius: 6px; padding: 10px 12px; font-size: 13px; }
+    QLineEdit:focus { border: 2px solid #007acc; background-color: #33333b; }
+    QPushButton { font-family: 'Segoe UI', sans-serif; font-size: 14px; font-weight: bold; border-radius: 6px; padding: 12px; }
+    QPushButton#submitButton { background-color: #007acc; color: white; border: none; }
+    QPushButton#submitButton:hover { background-color: #0098ff; }
+    QPushButton#backButton { background-color: transparent; color: #aaaaaa; border: none; }
+    QPushButton#backButton:hover { color: #ffffff; }
+   </string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>14</number></property>
+   <property name="leftMargin"><number>40</number></property>
+   <property name="rightMargin"><number>40</number></property>
+   <item>
+    <widget class="QLabel" name="titleLabel">
+     <property name="text"><string>Create Account</string></property>
+     <property name="alignment"><set>Qt::AlignCenter</set></property>
+    </widget>
+   </item>
+   <item><widget class="QLineEdit" name="usernameEdit"><property name="placeholderText"><string>Username</string></property></widget></item>
+   <item><widget class="QLineEdit" name="emailEdit"><property name="placeholderText"><string>Email Address</string></property></widget></item>
+   <item><widget class="QLineEdit" name="passwordEdit"><property name="echoMode"><enum>QLineEdit::Password</enum></property><property name="placeholderText"><string>Password</string></property></widget></item>
+   
+   <!-- New Localised Fields -->
+   <item><widget class="QLineEdit" name="homeCityEdit"><property name="placeholderText"><string>Home City (for weather alerts)</string></property></widget></item>
+   <item><widget class="QLineEdit" name="workCityEdit"><property name="placeholderText"><string>Work City (for commute weather)</string></property></widget></item>
+   
+   <item><widget class="QPushButton" name="submitButton"><property name="text"><string>Sign Up</string></property></widget></item>
+   <item><widget class="QPushButton" name="backButton"><property name="text"><string>← Back to Home</string></property></widget></item>
+  </layout>
+ </widget>
+</ui>
