@@ -121,7 +121,7 @@ bool Database::createUser(userInfo user) const
 
     productivityQuery.bindValue(":user_id", userId);
     productivityQuery.bindValue(":calendar", QByteArray());
-    productivityQuery.bindValue(":hourly_tasks", user.productivity.HourlySchedules.toJson());
+    productivityQuery.bindValue(":hourly_tasks", user.productivity.hourly.toJson());
     productivityQuery.bindValue(":todoList", user.productivity.todoList.toJson());
 
     if (!productivityQuery.exec())
@@ -154,7 +154,7 @@ userInfo Database::getAllInfo(QString uName)
             temp.homeCity = query.value(0).toString();
             temp.work = query.value(1).toString();
             temp.productivity.calendar = Calendar::fromJson(query.value(2).toByteArray());
-            temp.productivity.HourlySchedules = HourlySchedules::fromJson(query.value(3).toString(), QDate::currentDate());
+            temp.productivity.hourly = HourlySchedules::fromJson(query.value(3).toString(), QDate::currentDate());
             temp.productivity.todoList = TodoList::fromJson(query.value(4).toString());
         }
         else
@@ -196,7 +196,7 @@ bool Database::saveHourlySchedules(QMap<int, QString> hourly, userInfo u)
                 "SET hourly_tasks = :hourly_tasks "
                 "WHERE id = (SELECT id FROM user WHERE userName = :username);");
         
-    query.bindValue(":hourly_tasks", u.productivity.HourlySchedules.toJson());
+    query.bindValue(":hourly_tasks", u.productivity.hourly.toJson());
     query.bindValue(":username", u.username);
 
     

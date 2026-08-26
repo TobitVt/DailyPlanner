@@ -1,8 +1,8 @@
 #pragma once
 
-#include "hourlySchedule.h"
 #include "calendar.h"
 #include "todoList.h"
+#include "hourlySchedule.h"
 
 #include <QString>
 #include <QStringList>
@@ -11,7 +11,7 @@
 struct prod {
     Calendar calendar;              
     TodoList todoList;             
-    HourlySchedules HourlySchedules;
+    HourlySchedules hourly;
 };
 
 struct userInfo{

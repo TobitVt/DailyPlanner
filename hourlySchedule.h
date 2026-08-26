@@ -4,7 +4,6 @@
 #include <QMap>
 #include <QDate>
 
-#include "database.h"
 
 struct HourlyTask {
     QString description;

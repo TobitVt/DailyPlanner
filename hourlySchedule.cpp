@@ -58,7 +58,7 @@ QString HourlySchedules::toJson() const{
     return QJsonDocument(obj).toJson(QJsonDocument::Compact);
 }
 
-HourlySchedules HourlySchedules::fromJson(const QString& json, const QDate& date = QDate()){
+HourlySchedules HourlySchedules::fromJson(const QString& json, const QDate& date){
     HourlySchedules result(date);
     QJsonObject obj = QJsonDocument::fromJson(json.toUtf8()).object();
 

@@ -6,6 +6,9 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QStringList>
+#include <QTimeZone>
+#include <QDateTime>
+#include <QTime>
 
 #include <algorithm>
 
@@ -27,7 +30,7 @@ QDateTime parseIcsDateTime(const QString& value, bool* dateOnly) {
         const QDate date = QDate::fromString(value, QStringLiteral("yyyyMMdd"));
         if (date.isValid()) {
             if (dateOnly) *dateOnly = true;
-            return QDateTime(date, QTime(0, 0), Qt::LocalTime);
+            return QDateTime(date, QTime(0, 0), QTimeZone::LocalTime);
         }
     }
 
@@ -39,7 +42,7 @@ QDateTime parseIcsDateTime(const QString& value, bool* dateOnly) {
     const QTime time = QTime::fromString(dateTimeValue.mid(9), QStringLiteral("HHmmss"));
     if (!date.isValid() || !time.isValid()) return {};
 
-    return QDateTime(date, time, isUtc ? Qt::UTC : Qt::LocalTime);
+    return QDateTime(date, time, isUtc ? QTimeZone::UTC : QTimeZone::LocalTime);
 }
 
 }
