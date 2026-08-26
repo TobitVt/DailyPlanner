@@ -34,5 +34,8 @@ add_executable(DailyPlannerGui
     verse.cpp
     calendar.cpp
     hourlySchedule.cpp
+    welcome.ui
+    signup.ui
+    login.ui
 )
 target_link_libraries(DailyPlannerGui PRIVATE Qt6::Widgets Qt6::Core Qt6::Network Qt6::Sql)
