@@ -31,7 +31,9 @@ int main(int argc, char *argv[]) {
     QString home, work;
 
 
-    while (true) 
+    bool authenticated = false;
+
+    while (!authenticated)
     {
         out << getDailyVerse() << Qt::flush;
         out << "\n--- WEATHER APP ---\n1. Sign Up\n2. Log In\n3. Exit\nChoose: " << Qt::flush;
@@ -52,13 +54,15 @@ int main(int argc, char *argv[]) {
             if (plannerDB.createUser(newUser))
             {
                 out << "Account registered!\n";
+                authenticated = true;
             }
-
-            break;
+            else
+            {
+                out << "Unable to register account. The username may already exist.\n";
+            }
         } 
         else if (choice == "2") 
         {
-
             out << "Enter Username: " << Qt::flush; QString inputUser = in.readLine().trimmed();
             out << "Enter Password: " << Qt::flush; QString inputPass = in.readLine().trimmed();
 
@@ -82,14 +86,14 @@ int main(int argc, char *argv[]) {
                 home = loggedUser.homeCity;   
                 work = loggedUser.work; 
 
-                break; // Break the infinite loop 
+                authenticated = true;
             } else {
                 out << "Access Denied: Incorrect login details.\n";
             }
 
         } else if (choice == "3") 
         {
-            break;
+            return 0;
         } else 
         {
             out << "Invalid option entry.\n";
@@ -127,6 +131,6 @@ int main(int argc, char *argv[]) {
 
 
 
-    return app.exec();
+    return 0;
 }  
 

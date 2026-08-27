@@ -138,9 +138,8 @@ userInfo Database::getAllInfo(QString uName)
 {
     QSqlQuery query;
     userInfo temp;
-    temp.username = uName;
 
-    query.prepare("SELECT u.homeCity, u.work, p.calendar, p.hourly_tasks, p.todoList "
+    query.prepare("SELECT u.password, u.homeCity, u.work, p.calendar, p.hourly_tasks, p.todoList "
     "FROM user u "
     "JOIN productivity p ON u.id = p.user_id "
     "WHERE u.userName = :username");
@@ -151,11 +150,13 @@ userInfo Database::getAllInfo(QString uName)
     {
         if (query.next())
         {
-            temp.homeCity = query.value(0).toString();
-            temp.work = query.value(1).toString();
-            temp.productivity.calendar = Calendar::fromJson(query.value(2).toByteArray());
-            temp.productivity.hourly = HourlySchedules::fromJson(query.value(3).toString(), QDate::currentDate());
-            temp.productivity.todoList = TodoList::fromJson(query.value(4).toString());
+            temp.username = uName;
+            temp.password = query.value(0).toString();
+            temp.homeCity = query.value(1).toString();
+            temp.work = query.value(2).toString();
+            temp.productivity.calendar = Calendar::fromJson(query.value(3).toByteArray());
+            temp.productivity.hourly = HourlySchedules::fromJson(query.value(4).toString(), QDate::currentDate());
+            temp.productivity.todoList = TodoList::fromJson(query.value(5).toString());
         }
         else
         {
@@ -179,7 +180,7 @@ bool Database::saveTodoList(QStringList todo, userInfo u)
     
     query.prepare("UPDATE productivity "
                 "SET todoList = :todoList "
-                "WHERE id = (SELECT id FROM user WHERE userName = :username);");
+                "WHERE user_id = (SELECT id FROM user WHERE userName = :username);");
     
     query.bindValue(":todoList", u.productivity.todoList.toJson());
     query.bindValue(":username", u.username);
@@ -194,7 +195,7 @@ bool Database::saveHourlySchedules(QMap<int, QString> hourly, userInfo u)
     
     query.prepare("UPDATE productivity "
                 "SET hourly_tasks = :hourly_tasks "
-                "WHERE id = (SELECT id FROM user WHERE userName = :username);");
+                "WHERE user_id = (SELECT id FROM user WHERE userName = :username);");
         
     query.bindValue(":hourly_tasks", u.productivity.hourly.toJson());
     query.bindValue(":username", u.username);
@@ -209,7 +210,7 @@ bool Database::saveCalendar(QByteArray cal, userInfo u)
     
     query.prepare("UPDATE productivity "
                 "SET calendar = :calendar "
-                "WHERE id = (SELECT id FROM user WHERE userName = :username);");
+                "WHERE user_id = (SELECT id FROM user WHERE userName = :username);");
     
     query.bindValue(":calendar", cal);
     query.bindValue(":username", u.username);
