@@ -1,4 +1,6 @@
 #include <QApplication>
+#include <QMessageBox>
+#include "database.h"
 #include "mainwindow.h"
 
 int main(int argc, char *argv[]) {
@@ -13,7 +15,14 @@ int main(int argc, char *argv[]) {
     "QListWidget { border: none; }"
     );
 
-    MainWindow window;
+    Database plannerDB("planner.db");
+    if (!plannerDB.isOpen()) {
+        QMessageBox::critical(nullptr, "Database error",
+                              "The planner database could not be opened or initialized.");
+        return 1;
+    }
+
+    MainWindow window(plannerDB);
     window.show();
     return app.exec();
 }
