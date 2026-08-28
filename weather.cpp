@@ -72,6 +72,10 @@ WeatherData getData(const QString &url)
 void getWeatherSummary(QString Loc)
 {
     QString apiKey = qEnvironmentVariable("OPENWEATHER_API_KEY");
+    if (apiKey.trimmed().isEmpty()) {
+        qDebug() << "Weather unavailable: OPENWEATHER_API_KEY is not set.";
+        return;
+    }
     QString url = QString("https://api.openweathermap.org/data/2.5/forecast?q=%1&units=metric&appid=%2").arg(Loc, apiKey);
     
     WeatherData weather = getData(url);
@@ -153,6 +157,10 @@ void getWeatherSummary(QString Loc)
 void getForecast(QString Loc)
 {
     QString apiKey = qEnvironmentVariable("OPENWEATHER_API_KEY");
+    if (apiKey.trimmed().isEmpty()) {
+        qDebug() << "Forecast unavailable: OPENWEATHER_API_KEY is not set.";
+        return;
+    }
     QString url = QString("https://api.openweathermap.org/data/2.5/forecast?q=%1&units=metric&appid=%2").arg(Loc, apiKey);
     
     WeatherData weather = getData(url);
