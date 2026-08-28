@@ -4,18 +4,22 @@ A personalized desktop daily planner built with C++ and Qt. The application comb
 
 ## Features
 
+The project is currently an early working prototype. The CLI supports basic
+SQLite-backed registration and login. The GUI opens a dashboard and supports
+basic in-memory task interactions; the GUI authentication and persistence flow
+is still being implemented.
+
 ### User Accounts
 - User registration and login
-- Secure password storage
+- Basic password storage (hashing is not implemented yet)
 - Personalized user profiles
-- Individual data storage per user
+- Individual database records per user
 
 ### Task Management
-- Create, edit, and delete tasks
-- Mark tasks as completed
-- Priority levels
-- Due dates
-- Task filtering and sorting
+- Add and remove tasks in the GUI
+- Mark tasks as completed in the GUI
+- Priority levels and due dates are supported by the model
+- GUI persistence is not implemented yet
 
 ### Calendar & Scheduling
 - Interactive calendar view
@@ -56,17 +60,29 @@ A personalized desktop daily planner built with C++ and Qt. The application comb
 
 ## Planned Features
 
-- [ ] User authentication
-- [ ] SQLite database integration
-- [ ] Dashboard UI
-- [ ] Task management system
-- [ ] Calendar scheduling
+- [ ] GUI user authentication and current-user handling
+- [x] Basic SQLite database integration
+- [x] Dashboard UI prototype
+- [ ] GUI task persistence and task editing
+- [ ] GUI calendar and schedule integration
 - [ ] Reminder notifications
-- [ ] Weather API integration
-- [ ] Calendar import (.ics)
+- [x] Basic weather API integration in the CLI
+- [x] Basic `.ics` calendar import model
 - [ ] Settings page
 - [ ] Dark mode
 - [ ] Data export
+
+## Current Progress
+
+The project is approximately **30% complete** against the full planned
+application. The strongest areas are the Qt/CMake setup, core data models,
+basic SQLite user/productivity storage, CLI authentication, calendar parsing,
+and the initial GUI task interactions.
+
+The largest remaining work is connecting the GUI login and signup screens to
+the database, tracking the current user, loading and saving all productivity
+data, and implementing the schedule, calendar, reminders, dashboard weather,
+and daily-analysis workflows.
 
 ## Building
 
