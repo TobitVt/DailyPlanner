@@ -47,7 +47,7 @@ Database::Database(const QString& dbPath) {
         return;
     }
 
-    createTables();
+    m_ready = createTables();
 }
 
 Database::~Database() {
@@ -55,7 +55,7 @@ Database::~Database() {
 }
 
 bool Database::isOpen() const {
-    return QSqlDatabase::database().isOpen();
+    return m_ready && QSqlDatabase::database().isOpen();
 }
 
 bool Database::createTables() {
@@ -95,6 +95,17 @@ bool Database::createTables() {
 
 bool Database::createUser(userInfo user) const
 {
+    if (!isOpen() || user.username.trimmed().isEmpty() || user.password.isEmpty() ||
+        user.homeCity.trimmed().isEmpty()) {
+        return false;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.transaction()) {
+        qDebug() << "Failed to start user creation transaction:" << db.lastError().text();
+        return false;
+    }
+
     QSqlQuery query;
 
     query.prepare("INSERT INTO user (userName, password, homeCity, work) "
@@ -109,6 +120,7 @@ bool Database::createUser(userInfo user) const
     {
         qDebug() << "Failed to create user:"
                  << query.lastError().text();
+        db.rollback();
         return false;
     }
 
@@ -128,6 +140,13 @@ bool Database::createUser(userInfo user) const
     {
         qDebug() << "Failed to create productivity record:"
                  << productivityQuery.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    if (!db.commit()) {
+        qDebug() << "Failed to commit user creation transaction:" << db.lastError().text();
+        db.rollback();
         return false;
     }
 
