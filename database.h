@@ -40,4 +40,5 @@ public:
 
 private:
     bool createTables();
+    bool m_ready = false;
 };
