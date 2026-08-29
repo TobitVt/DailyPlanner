@@ -44,7 +44,14 @@ private:
 
     void loadCurrentUser();
     bool saveCurrentTasks();
+    bool saveCalendarAndSchedule();
     void updateDashboardUser();
     void updateGreeting();
+    void loadScheduleDisplay();
+    void loadCalendarDisplay();
     void addTaskToList(const QString& text, bool done = false);
+    void onTaskDoubleClicked(QListWidgetItem* item);
+    void onAddScheduleItemClicked();
+    void onScheduleItemDoubleClicked(QListWidgetItem* item);
+    void onAddEventClicked();
 };
