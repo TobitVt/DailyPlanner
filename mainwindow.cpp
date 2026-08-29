@@ -12,6 +12,14 @@
 #include <QMessageBox>
 #include <QStackedWidget>
 #include <QSignalBlocker>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QSpinBox>
+#include <QDateTimeEdit>
+#include <QComboBox>
+#include <QPushButton>
 
 MainWindow::MainWindow(Database& database, QWidget *parent)
         : QMainWindow(parent), ui(new Ui::MainWindow), welcomeUi(nullptr), loginUi(nullptr),
@@ -41,8 +49,37 @@ MainWindow::MainWindow(Database& database, QWidget *parent)
     connect(ui->tasksListWidget, &QListWidget::itemChanged, this, &MainWindow::onTaskItemChanged);
     connect(ui->tasksListWidget, &QListWidget::customContextMenuRequested,
             this, &MainWindow::onTaskListContextMenuRequested);
+    connect(ui->tasksListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::onTaskDoubleClicked);
     ui->tasksListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    
+    connect(ui->scheduleListWidget, &QListWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
+        QListWidgetItem* item = ui->scheduleListWidget->itemAt(pos);
+        if (!item) return;
+        QMenu menu;
+        QAction* removeAction = menu.addAction("Remove");
+        if (menu.exec(ui->scheduleListWidget->viewport()->mapToGlobal(pos)) == removeAction) {
+            int row = ui->scheduleListWidget->row(item);
+            int hour = row + 6;
+            currentUser.productivity.hourly.removeTask(hour);
+            saveCalendarAndSchedule();
+            loadScheduleDisplay();
+        }
+    });
+    ui->scheduleListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    
     connect(ui->logoutButton, &QPushButton::clicked, this, &MainWindow::onLogoutClicked);
+    
+    // Connect schedule and event buttons
+    if (ui->viewAllTasksButton) {
+        connect(ui->viewAllTasksButton, &QPushButton::clicked, this, [this]() {
+            onAddScheduleItemClicked();
+        });
+    }
+    if (ui->viewCalendarButton) {
+        connect(ui->viewCalendarButton, &QPushButton::clicked, this, [this]() {
+            onAddEventClicked();
+        });
+    }
 
     connect(welcomeUi->loginButton, &QPushButton::clicked, this, &MainWindow::showLoginScreen);
     connect(welcomeUi->signupButton, &QPushButton::clicked, this, &MainWindow::showSignupScreen);
@@ -85,7 +122,7 @@ void MainWindow::onLoginSubmitted() {
     }
 
     userInfo user = database.getAllInfo(username);
-    if (user.username.isEmpty() || user.password != password) {
+    if (user.username.isEmpty() || !PasswordHash::verify(password, user.password)) {
         QMessageBox::warning(this, "Login", "Incorrect username or password.");
         return;
     }
@@ -101,6 +138,7 @@ void MainWindow::onSignupSubmitted() {
     userInfo newUser;
     newUser.username = signupUi->usernameEdit->text().trimmed();
     newUser.password = signupUi->passwordEdit->text();
+    newUser.email = signupUi->emailEdit->text().trimmed();
     newUser.homeCity = signupUi->homeCityEdit->text().trimmed();
     newUser.work = signupUi->workCityEdit->text().trimmed();
 
@@ -129,6 +167,7 @@ void MainWindow::onSignupSubmitted() {
 void MainWindow::onLogoutClicked() {
     currentUser = userInfo();
     ui->tasksListWidget->clear();
+    ui->scheduleListWidget->clear();
     ui->userNameLabel->setText("Guest");
     ui->userEmailLabel->setText("Not signed in");
     ui->greetingLabel->setText("Welcome!");
@@ -143,6 +182,33 @@ void MainWindow::loadCurrentUser() {
     for (const Task& task : currentUser.productivity.todoList.tasks()) {
         addTaskToList(task.description, task.done);
     }
+    loadScheduleDisplay();
+    loadCalendarDisplay();
+}
+
+void MainWindow::loadScheduleDisplay() {
+    ui->scheduleListWidget->clear();
+    const HourlySchedules& schedule = currentUser.productivity.hourly;
+    for (int hour = 6; hour < 23; ++hour) {
+        if (schedule.hasTask(hour)) {
+            const HourlyTask& task = schedule.taskAt(hour);
+            QString text = QString::number(hour).rightJustified(2, '0') + ":00 - " + task.description;
+            if (task.done) {
+                text = "✓ " + text;
+            }
+            ui->scheduleListWidget->addItem(text);
+        }
+    }
+    if (ui->scheduleListWidget->count() == 0) {
+        ui->scheduleListWidget->addItem("No schedule items for today");
+    }
+}
+
+void MainWindow::loadCalendarDisplay() {
+    const QDate today = QDate::currentDate();
+    const QVector<CalendarEvent> todayEvents = currentUser.productivity.calendar.eventsOnDate(today);
+    int eventCount = todayEvents.size();
+    ui->summaryEventsLabel->setText(QString::number(eventCount) + " event" + (eventCount != 1 ? "s" : "") + " today");
 }
 
 bool MainWindow::saveCurrentTasks() {
@@ -156,6 +222,21 @@ bool MainWindow::saveCurrentTasks() {
     return true;
 }
 
+bool MainWindow::saveCalendarAndSchedule() {
+    if (currentUser.username.isEmpty()) {
+        return false;
+    }
+    if (!database.saveHourlySchedules(QMap<int, QString>(), currentUser)) {
+        QMessageBox::warning(this, "Save error", "Your schedule changes could not be saved.");
+        return false;
+    }
+    if (!database.saveCalendar(currentUser.productivity.calendar.toJson(), currentUser)) {
+        QMessageBox::warning(this, "Save error", "Your calendar changes could not be saved.");
+        return false;
+    }
+    return true;
+}
+
 void MainWindow::updateDashboardUser() {
     ui->userNameLabel->setText(currentUser.username);
     ui->userEmailLabel->setText("Home: " + currentUser.homeCity + " | Work: " + currentUser.work);
@@ -164,7 +245,9 @@ void MainWindow::updateDashboardUser() {
                                    " tasks");
     ui->summaryEventsLabel->setText(QString::number(currentUser.productivity.calendar.events().size()) +
                                     " events");
-    ui->summaryReminderLabel->setText("No reminders loaded");
+    if (ui->summaryReminderLabel) {
+        ui->summaryReminderLabel->setText("No reminders loaded");
+    }
 }
 
 void MainWindow::updateGreeting() {
@@ -226,4 +309,133 @@ void MainWindow::onTaskItemChanged(QListWidgetItem* item) {
     const int row = ui->tasksListWidget->row(item);
     currentUser.productivity.todoList.setDone(row, isDone);
     saveCurrentTasks();
+}
+
+void MainWindow::onTaskDoubleClicked(QListWidgetItem* item) {
+    const int row = ui->tasksListWidget->row(item);
+    if (row < 0 || row >= currentUser.productivity.todoList.tasks().size()) {
+        return;
+    }
+
+    const Task& task = currentUser.productivity.todoList.tasks()[row];
+
+    QDialog dialog(this);
+    dialog.setWindowTitle("Edit task");
+    dialog.setMinimumWidth(400);
+
+    QVBoxLayout layout(&dialog);
+
+    layout.addWidget(new QLabel("Description:"));
+    QLineEdit descEdit;
+    descEdit.setText(task.description);
+    layout.addWidget(&descEdit);
+
+    layout.addWidget(new QLabel("Priority:"));
+    QComboBox priorityCombo;
+    priorityCombo.addItem("Low", static_cast<int>(TaskPriority::Low));
+    priorityCombo.addItem("Medium", static_cast<int>(TaskPriority::Medium));
+    priorityCombo.addItem("High", static_cast<int>(TaskPriority::High));
+    priorityCombo.setCurrentIndex(static_cast<int>(task.priority));
+    layout.addWidget(&priorityCombo);
+
+    layout.addWidget(new QLabel("Due date (optional):"));
+    QDateTimeEdit dueDateEdit;
+    dueDateEdit.setDateTime(task.dueDate.isValid() ? task.dueDate : QDateTime::currentDateTime());
+    dueDateEdit.setCalendarPopup(true);
+    layout.addWidget(&dueDateEdit);
+
+    QHBoxLayout buttonLayout;
+    QPushButton saveBtn("Save");
+    QPushButton cancelBtn("Cancel");
+    buttonLayout.addWidget(&saveBtn);
+    buttonLayout.addWidget(&cancelBtn);
+    layout.addLayout(&buttonLayout);
+
+    connect(&saveBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+    connect(&cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        currentUser.productivity.todoList.setPriority(row, static_cast<TaskPriority>(priorityCombo.currentData().toInt()));
+        currentUser.productivity.todoList.setDueDate(row, dueDateEdit.dateTime());
+        saveCurrentTasks();
+        item->setText(descEdit.text());
+    }
+}
+
+void MainWindow::onAddScheduleItemClicked() {
+    bool accepted = false;
+    const int hour = QInputDialog::getInt(
+        this, "Add schedule item", "Hour (6-22):", 9, 6, 22, 1, &accepted);
+    if (!accepted) return;
+
+    const QString description = QInputDialog::getText(
+        this, "Add schedule item", "Task description:", QLineEdit::Normal, QString(), &accepted).trimmed();
+    if (!accepted || description.isEmpty()) return;
+
+    currentUser.productivity.hourly.setTask(hour, description);
+    saveCalendarAndSchedule();
+    loadScheduleDisplay();
+}
+
+void MainWindow::onAddEventClicked() {
+    QDialog dialog(this);
+    dialog.setWindowTitle("Add calendar event");
+    dialog.setMinimumWidth(400);
+
+    QVBoxLayout layout(&dialog);
+
+    layout.addWidget(new QLabel("Event summary:"));
+    QLineEdit summaryEdit;
+    layout.addWidget(&summaryEdit);
+
+    layout.addWidget(new QLabel("Description:"));
+    QLineEdit descEdit;
+    layout.addWidget(&descEdit);
+
+    layout.addWidget(new QLabel("Start date and time:"));
+    QDateTimeEdit startEdit;
+    startEdit.setDateTime(QDateTime::currentDateTime());
+    startEdit.setCalendarPopup(true);
+    layout.addWidget(&startEdit);
+
+    layout.addWidget(new QLabel("End date and time:"));
+    QDateTimeEdit endEdit;
+    endEdit.setDateTime(QDateTime::currentDateTime().addSecs(3600));
+    endEdit.setCalendarPopup(true);
+    layout.addWidget(&endEdit);
+
+    layout.addWidget(new QLabel("All day event:"));
+    QComboBox allDayCombo;
+    allDayCombo.addItem("No");
+    allDayCombo.addItem("Yes");
+    layout.addWidget(&allDayCombo);
+
+    QHBoxLayout buttonLayout;
+    QPushButton saveBtn("Create");
+    QPushButton cancelBtn("Cancel");
+    buttonLayout.addWidget(&saveBtn);
+    buttonLayout.addWidget(&cancelBtn);
+    layout.addLayout(&buttonLayout);
+
+    connect(&saveBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+    connect(&cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        if (summaryEdit.text().trimmed().isEmpty()) {
+            QMessageBox::warning(this, "Add event", "Event summary is required.");
+            return;
+        }
+
+        CalendarEvent event;
+        event.summary = summaryEdit.text().trimmed();
+        event.description = descEdit.text().trimmed();
+        event.start = startEdit.dateTime();
+        event.end = endEdit.dateTime();
+        event.allDay = (allDayCombo.currentIndex() == 1);
+
+        currentUser.productivity.calendar.addEvent(event);
+        saveCalendarAndSchedule();
+        loadCalendarDisplay();
+        QMessageBox::information(this, "Event added", "Calendar event has been added.");
+    }
 }
