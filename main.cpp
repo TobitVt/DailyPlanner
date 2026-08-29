@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-            if (inputPass == loggedUser.password) {
+            if (PasswordHash::verify(inputPass, loggedUser.password)) {
                 out << "\n====================================\n"
                     << "               DASHBOARD              \n"
                     << "====================================\n"
