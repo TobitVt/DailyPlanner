@@ -4,10 +4,20 @@
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
+#include <QCryptographicHash>
 
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+
+QString PasswordHash::hash(const QString& password) {
+    QByteArray hash = QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha256);
+    return QString::fromLatin1(hash.toHex());
+}
+
+bool PasswordHash::verify(const QString& password, const QString& hash) {
+    return PasswordHash::hash(password) == hash;
+}
 
 // QString serializeTodoList(const QStringList& list) {
 //     return QJsonDocument(QJsonArray::fromStringList(list)).toJson(QJsonDocument::Compact);
@@ -66,6 +76,7 @@ bool Database::createTables() {
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
         "userName TEXT NOT NULL UNIQUE, "
         "password TEXT NOT NULL, "
+        "email TEXT, "
         "homeCity TEXT NOT NULL, "
         "work TEXT"
         ")"
@@ -108,11 +119,12 @@ bool Database::createUser(userInfo user) const
 
     QSqlQuery query;
 
-    query.prepare("INSERT INTO user (userName, password, homeCity, work) "
-                  "VALUES (:username, :password, :homeCity, :work)");
+    query.prepare("INSERT INTO user (userName, password, email, homeCity, work) "
+                  "VALUES (:username, :password, :email, :homeCity, :work)");
 
     query.bindValue(":username", user.username);
-    query.bindValue(":password", user.password);
+    query.bindValue(":password", PasswordHash::hash(user.password));
+    query.bindValue(":email", user.email);
     query.bindValue(":homeCity", user.homeCity);
     query.bindValue(":work", user.work);
 
@@ -158,7 +170,7 @@ userInfo Database::getAllInfo(QString uName)
     QSqlQuery query;
     userInfo temp;
 
-    query.prepare("SELECT u.password, u.homeCity, u.work, p.calendar, p.hourly_tasks, p.todoList "
+    query.prepare("SELECT u.password, u.email, u.homeCity, u.work, p.calendar, p.hourly_tasks, p.todoList "
     "FROM user u "
     "JOIN productivity p ON u.id = p.user_id "
     "WHERE u.userName = :username");
@@ -171,11 +183,12 @@ userInfo Database::getAllInfo(QString uName)
         {
             temp.username = uName;
             temp.password = query.value(0).toString();
-            temp.homeCity = query.value(1).toString();
-            temp.work = query.value(2).toString();
-            temp.productivity.calendar = Calendar::fromJson(query.value(3).toByteArray());
-            temp.productivity.hourly = HourlySchedules::fromJson(query.value(4).toString(), QDate::currentDate());
-            temp.productivity.todoList = TodoList::fromJson(query.value(5).toString());
+            temp.email = query.value(1).toString();
+            temp.homeCity = query.value(2).toString();
+            temp.work = query.value(3).toString();
+            temp.productivity.calendar = Calendar::fromJson(query.value(4).toByteArray());
+            temp.productivity.hourly = HourlySchedules::fromJson(query.value(5).toString(), QDate::currentDate());
+            temp.productivity.todoList = TodoList::fromJson(query.value(6).toString());
         }
         else
         {
