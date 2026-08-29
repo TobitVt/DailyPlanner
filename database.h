@@ -16,10 +16,17 @@ struct prod {
 
 struct userInfo{
     QString username;
-    QString password;
+    QString password;  // stored as hash
+    QString email;
     QString homeCity;
     QString work;
     prod productivity;
+};
+
+class PasswordHash {
+public:
+    static QString hash(const QString& password);
+    static bool verify(const QString& password, const QString& hash);
 };
 
 class Database {
