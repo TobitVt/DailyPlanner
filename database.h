@@ -3,35 +3,41 @@
 #include "calendar.h"
 #include "todoList.h"
 #include "hourlySchedule.h"
+#include "reminder.h"
 
 #include <QString>
 #include <QStringList>
 #include <QMap>
 
-struct prod {
-    Calendar calendar;              
-    TodoList todoList;             
+struct prod
+{
+    Calendar calendar;
+    TodoList todoList;
     HourlySchedules hourly;
+    Reminders reminders;
 };
 
-struct userInfo{
+struct userInfo
+{
     QString username;
-    QString password;  // stored as hash
+    QString password; // stored as hash
     QString email;
     QString homeCity;
     QString work;
     prod productivity;
 };
 
-class PasswordHash {
+class PasswordHash
+{
 public:
-    static QString hash(const QString& password);
-    static bool verify(const QString& password, const QString& hash);
+    static QString hash(const QString &password);
+    static bool verify(const QString &password, const QString &hash);
 };
 
-class Database {
+class Database
+{
 public:
-    explicit Database(const QString& dbPath);
+    explicit Database(const QString &dbPath);
     ~Database();
 
     bool isOpen() const;
@@ -42,8 +48,8 @@ public:
     bool saveTodoList(QStringList todo, userInfo u);
     bool saveHourlySchedules(QMap<int, QString> hourly, userInfo u);
     bool saveCalendar(QByteArray cal, userInfo u);
-
-
+    bool saveReminders(userInfo u);
+    bool updateUserProfile(const userInfo &user);
 
 private:
     bool createTables();
