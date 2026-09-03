@@ -19,7 +19,8 @@ WeatherData getData(const QString &url)
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
     loop.exec();
 
-    if (reply->error() != QNetworkReply::NoError) {
+    if (reply->error() != QNetworkReply::NoError)
+    {
         data.success = false;
         data.errorMessage = reply->errorString();
         reply->deleteLater();
@@ -27,18 +28,25 @@ WeatherData getData(const QString &url)
     }
 
     QByteArray raw = reply->readAll();
+    data = parseWeatherData(raw);
     reply->deleteLater();
+    return data;
+}
 
+WeatherData parseWeatherData(const QByteArray &raw)
+{
+    WeatherData data;
     QJsonDocument doc = QJsonDocument::fromJson(raw);
     QJsonObject obj = doc.object();
 
     QJsonObject cityObj = obj["city"].toObject();
     data.locationName = cityObj["name"].toString();
     data.sunrise = QDateTime::fromSecsSinceEpoch(cityObj["sunrise"].toInt());
-    data.sunset  = QDateTime::fromSecsSinceEpoch(cityObj["sunset"].toInt());
+    data.sunset = QDateTime::fromSecsSinceEpoch(cityObj["sunset"].toInt());
 
     QJsonArray list = obj["list"].toArray();
-    for (const QJsonValue &v : list) {
+    for (const QJsonValue &v : list)
+    {
         QJsonObject block = v.toObject();
         QJsonObject main = block["main"].toObject();
         QJsonObject wind = block["wind"].toObject();
@@ -46,19 +54,22 @@ WeatherData getData(const QString &url)
         QJsonObject weatherObj = weatherArr.isEmpty() ? QJsonObject() : weatherArr[0].toObject();
 
         ForecastEntry entry;
-        entry.time        = QDateTime::fromSecsSinceEpoch(block["dt"].toInt());
-        entry.temp        = main["temp"].toDouble();
-        entry.feelsLike   = main["feels_like"].toDouble();
-        entry.humidity    = main["humidity"].toInt();
-        entry.windSpeed   = wind["speed"].toDouble();
-        entry.pop         = block["pop"].toDouble(); // 0.0–1.0
-        entry.condition   = weatherObj["main"].toString();
+        entry.time = QDateTime::fromSecsSinceEpoch(block["dt"].toInt());
+        entry.temp = main["temp"].toDouble();
+        entry.feelsLike = main["feels_like"].toDouble();
+        entry.humidity = main["humidity"].toInt();
+        entry.windSpeed = wind["speed"].toDouble();
+        entry.pop = block["pop"].toDouble(); // 0.0–1.0
+        entry.condition = weatherObj["main"].toString();
         entry.description = weatherObj["description"].toString();
 
         // rain volume is nested and only present if it rained in that block
-        if (block.contains("rain")) {
+        if (block.contains("rain"))
+        {
             entry.rainVolume = block["rain"].toObject()["3h"].toDouble();
-        } else {
+        }
+        else
+        {
             entry.rainVolume = 0.0;
         }
 
@@ -72,16 +83,17 @@ WeatherData getData(const QString &url)
 void getWeatherSummary(QString Loc)
 {
     QString apiKey = qEnvironmentVariable("OPENWEATHER_API_KEY");
-    if (apiKey.trimmed().isEmpty()) {
+    if (apiKey.trimmed().isEmpty())
+    {
         qDebug() << "Weather unavailable: OPENWEATHER_API_KEY is not set.";
         return;
     }
     QString url = QString("https://api.openweathermap.org/data/2.5/forecast?q=%1&units=metric&appid=%2").arg(Loc, apiKey);
-    
+
     WeatherData weather = getData(url);
 
     QTime currentTime = QTime::currentTime();
-    //Format as a string ("14:32:05")
+    // Format as a string ("14:32:05")
     QString timeString = currentTime.toString("hh:mm:ss");
 
     int currentHour = timeString.left(2).toInt();
@@ -91,14 +103,14 @@ void getWeatherSummary(QString Loc)
 
     int todayCount = 0;
 
-    if (weather.success) 
+    if (weather.success)
     {
         out += "Weather - " + weather.locationName + "\n";
 
         out += "Sunrise: " + weather.sunrise.toString("hh:mm:ss") + "\n";
 
         out += "Currently: \n";
-        
+
         QVector<ForecastEntry> forecast = weather.forecast;
         double totalTemp = 0.0;
         double totalRain = 0.0;
@@ -117,13 +129,13 @@ void getWeatherSummary(QString Loc)
                     out += QString::number(forecast[i].temp) + "°C" + "\n";
                     out += forecast[i].description + "\n";
                     out += "Currently feels like: " + QString::number(forecast[i].feelsLike) + "°C" + "\n";
-                    out += QString::number(forecast[i].windSpeed) + "km/h windspeed \n";             
+                    out += QString::number(forecast[i].windSpeed) + "km/h windspeed \n";
                 }
 
-            totalTemp += forecast[i].temp;
-            totalRain += forecast[i].pop;
-            totalFall += forecast[i].rainVolume;
-            todayCount ++;
+                totalTemp += forecast[i].temp;
+                totalRain += forecast[i].pop;
+                totalFall += forecast[i].rainVolume;
+                todayCount++;
             }
         }
 
@@ -145,27 +157,26 @@ void getWeatherSummary(QString Loc)
         out += "Sunset: " + weather.sunset.toString("hh:mm:ss") + "\n";
 
         qDebug().noquote() << out;
-    } 
-    else 
+    }
+    else
     {
         qDebug() << "Error:" << weather.errorMessage;
-        
     }
 }
-
 
 void getForecast(QString Loc)
 {
     QString apiKey = qEnvironmentVariable("OPENWEATHER_API_KEY");
-    if (apiKey.trimmed().isEmpty()) {
+    if (apiKey.trimmed().isEmpty())
+    {
         qDebug() << "Forecast unavailable: OPENWEATHER_API_KEY is not set.";
         return;
     }
     QString url = QString("https://api.openweathermap.org/data/2.5/forecast?q=%1&units=metric&appid=%2").arg(Loc, apiKey);
-    
+
     WeatherData weather = getData(url);
 
-    if (weather.success) 
+    if (weather.success)
     {
         QString out;
         QVector<ForecastEntry> forecast = weather.forecast;
@@ -177,9 +188,12 @@ void getForecast(QString Loc)
 
         for (int i = 0; i < forecast.size(); i++)
         {
-            out += forecast[i].time.toString("hh:mm") + " " +QString::number(forecast[i].temp) + "°C" + " ";
-            tc ++;
-            if (tc == 8) {break;}
+            out += forecast[i].time.toString("hh:mm") + " " + QString::number(forecast[i].temp) + "°C" + " ";
+            tc++;
+            if (tc == 8)
+            {
+                break;
+            }
         }
         out += "\n";
         out += "3 hourly Precipation: \n";
@@ -187,9 +201,12 @@ void getForecast(QString Loc)
 
         for (int i = 0; i < forecast.size(); i++)
         {
-            out += forecast[i].time.toString("hh:mm") + " " +QString::number(forecast[i].pop * 100, 'f', 0) + "%" + " ";
-            rc ++;
-            if (rc == 8) {break;}
+            out += forecast[i].time.toString("hh:mm") + " " + QString::number(forecast[i].pop * 100, 'f', 0) + "%" + " ";
+            rc++;
+            if (rc == 8)
+            {
+                break;
+            }
         }
         out += "\n";
         out += "3 hourly wind speeds: \n";
@@ -197,9 +214,12 @@ void getForecast(QString Loc)
 
         for (int i = 0; i < forecast.size(); i++)
         {
-            out += forecast[i].time.toString("hh:mm") + " " +QString::number(forecast[i].windSpeed) + "km/h" + " ";
-            wc ++;
-            if (wc == 8) {break;}
+            out += forecast[i].time.toString("hh:mm") + " " + QString::number(forecast[i].windSpeed) + "km/h" + " ";
+            wc++;
+            if (wc == 8)
+            {
+                break;
+            }
         }
         out += "\n";
 
@@ -209,7 +229,7 @@ void getForecast(QString Loc)
         {
             int dayNumber = forecast[i].time.date().dayOfWeek();
             QString fcDay = locale.dayName(dayNumber, QLocale::ShortFormat);
-            
+
             if (!usedTemp.contains(fcDay))
             {
                 double totalTemp = 0.0;
@@ -228,22 +248,18 @@ void getForecast(QString Loc)
                 double avgTemp = (count > 0) ? (totalTemp / count) : 0.0;
                 out += fcDay + " " + QString::number(avgTemp, 'f', 0) + "°C" + " ";
                 usedTemp.push_back(fcDay);
-
-            }            
-
-
-
+            }
         }
         out += "\n";
 
         QVector<QString> usedRain;
         out += "daily Precipation: \n";
-        
+
         for (int i = 0; i < forecast.size(); i++)
         {
             int dayNumber = forecast[i].time.date().dayOfWeek();
             QString fcDay = locale.dayName(dayNumber, QLocale::ShortFormat);
-            
+
             if (!usedRain.contains(fcDay))
             {
                 double totalRain = 0.0;
@@ -262,18 +278,14 @@ void getForecast(QString Loc)
                 double avgRain = (count > 0) ? (totalRain / count * 100) : 0.0;
                 out += fcDay + " " + QString::number(avgRain) + "%" + " ";
                 usedRain.push_back(fcDay);
-
-            }            
-
+            }
         }
         out += "\n";
 
         qDebug().noquote() << out;
-    } 
-    else 
+    }
+    else
     {
         qDebug() << "Error:" << weather.errorMessage;
-        
     }
-
 }
