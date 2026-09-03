@@ -10,12 +10,14 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
-QString PasswordHash::hash(const QString& password) {
+QString PasswordHash::hash(const QString &password)
+{
     QByteArray hash = QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha256);
     return QString::fromLatin1(hash.toHex());
 }
 
-bool PasswordHash::verify(const QString& password, const QString& hash) {
+bool PasswordHash::verify(const QString &password, const QString &hash)
+{
     return PasswordHash::hash(password) == hash;
 }
 
@@ -47,12 +49,13 @@ bool PasswordHash::verify(const QString& password, const QString& hash) {
 //     return tasks;
 // }
 
-
-Database::Database(const QString& dbPath) {
+Database::Database(const QString &dbPath)
+{
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName(dbPath);
 
-    if (!db.open()) {
+    if (!db.open())
+    {
         qDebug() << "Failed to open database:" << db.lastError().text();
         return;
     }
@@ -60,15 +63,18 @@ Database::Database(const QString& dbPath) {
     m_ready = createTables();
 }
 
-Database::~Database() {
+Database::~Database()
+{
     QSqlDatabase::database().close();
 }
 
-bool Database::isOpen() const {
+bool Database::isOpen() const
+{
     return m_ready && QSqlDatabase::database().isOpen();
 }
 
-bool Database::createTables() {
+bool Database::createTables()
+{
     QSqlQuery query;
 
     bool ok1 = query.exec(
@@ -79,12 +85,13 @@ bool Database::createTables() {
         "email TEXT, "
         "homeCity TEXT NOT NULL, "
         "work TEXT"
-        ")"
-    );
-    if (!ok1) {
+        ")");
+    if (!ok1)
+    {
         qDebug() << "Failed to create user table:" << query.lastError().text();
         return false;
     }
+    query.exec("ALTER TABLE user ADD COLUMN email TEXT");
 
     bool ok2 = query.exec(
         "CREATE TABLE IF NOT EXISTS productivity ("
@@ -93,13 +100,17 @@ bool Database::createTables() {
         "calendar BLOB, "
         "hourly_tasks TEXT, "
         "todoList TEXT, "
+        "reminders TEXT, "
         "FOREIGN KEY (user_id) REFERENCES user(id)"
-        ")"
-    );
-    if (!ok2) {
+        ")");
+    if (!ok2)
+    {
         qDebug() << "Failed to create productivity table:" << query.lastError().text();
         return false;
     }
+
+    // Upgrade databases created before reminders were added.
+    query.exec("ALTER TABLE productivity ADD COLUMN reminders TEXT");
 
     return true;
 }
@@ -107,12 +118,14 @@ bool Database::createTables() {
 bool Database::createUser(userInfo user) const
 {
     if (!isOpen() || user.username.trimmed().isEmpty() || user.password.isEmpty() ||
-        user.homeCity.trimmed().isEmpty()) {
+        user.homeCity.trimmed().isEmpty())
+    {
         return false;
     }
 
     QSqlDatabase db = QSqlDatabase::database();
-    if (!db.transaction()) {
+    if (!db.transaction())
+    {
         qDebug() << "Failed to start user creation transaction:" << db.lastError().text();
         return false;
     }
@@ -140,13 +153,14 @@ bool Database::createUser(userInfo user) const
 
     QSqlQuery productivityQuery;
 
-    productivityQuery.prepare("INSERT INTO productivity (user_id, calendar, hourly_tasks, todoList) "
-                              "VALUES (:user_id, :calendar, :hourly_tasks, :todoList)");
+    productivityQuery.prepare("INSERT INTO productivity (user_id, calendar, hourly_tasks, todoList, reminders) "
+                              "VALUES (:user_id, :calendar, :hourly_tasks, :todoList, :reminders)");
 
     productivityQuery.bindValue(":user_id", userId);
     productivityQuery.bindValue(":calendar", QByteArray());
     productivityQuery.bindValue(":hourly_tasks", user.productivity.hourly.toJson());
     productivityQuery.bindValue(":todoList", user.productivity.todoList.toJson());
+    productivityQuery.bindValue(":reminders", user.productivity.reminders.toJson());
 
     if (!productivityQuery.exec())
     {
@@ -156,7 +170,8 @@ bool Database::createUser(userInfo user) const
         return false;
     }
 
-    if (!db.commit()) {
+    if (!db.commit())
+    {
         qDebug() << "Failed to commit user creation transaction:" << db.lastError().text();
         db.rollback();
         return false;
@@ -170,10 +185,10 @@ userInfo Database::getAllInfo(QString uName)
     QSqlQuery query;
     userInfo temp;
 
-    query.prepare("SELECT u.password, u.email, u.homeCity, u.work, p.calendar, p.hourly_tasks, p.todoList "
-    "FROM user u "
-    "JOIN productivity p ON u.id = p.user_id "
-    "WHERE u.userName = :username");
+    query.prepare("SELECT u.password, u.email, u.homeCity, u.work, p.calendar, p.hourly_tasks, p.todoList, p.reminders "
+                  "FROM user u "
+                  "JOIN productivity p ON u.id = p.user_id "
+                  "WHERE u.userName = :username");
 
     query.bindValue(":username", uName);
 
@@ -189,6 +204,7 @@ userInfo Database::getAllInfo(QString uName)
             temp.productivity.calendar = Calendar::fromJson(query.value(4).toByteArray());
             temp.productivity.hourly = HourlySchedules::fromJson(query.value(5).toString(), QDate::currentDate());
             temp.productivity.todoList = TodoList::fromJson(query.value(6).toString());
+            temp.productivity.reminders = Reminders::fromJson(query.value(7).toString());
         }
         else
         {
@@ -201,52 +217,72 @@ userInfo Database::getAllInfo(QString uName)
     }
 
     return temp;
-
-
-
 }
 
 bool Database::saveTodoList(QStringList todo, userInfo u)
 {
     QSqlQuery query;
-    
+
     query.prepare("UPDATE productivity "
-                "SET todoList = :todoList "
-                "WHERE user_id = (SELECT id FROM user WHERE userName = :username);");
-    
+                  "SET todoList = :todoList "
+                  "WHERE user_id = (SELECT id FROM user WHERE userName = :username);");
+
     query.bindValue(":todoList", u.productivity.todoList.toJson());
     query.bindValue(":username", u.username);
 
-    
     return query.exec();
 }
 
 bool Database::saveHourlySchedules(QMap<int, QString> hourly, userInfo u)
 {
     QSqlQuery query;
-    
+
     query.prepare("UPDATE productivity "
-                "SET hourly_tasks = :hourly_tasks "
-                "WHERE user_id = (SELECT id FROM user WHERE userName = :username);");
-        
+                  "SET hourly_tasks = :hourly_tasks "
+                  "WHERE user_id = (SELECT id FROM user WHERE userName = :username);");
+
     query.bindValue(":hourly_tasks", u.productivity.hourly.toJson());
     query.bindValue(":username", u.username);
 
-    
     return query.exec();
 }
 
 bool Database::saveCalendar(QByteArray cal, userInfo u)
 {
     QSqlQuery query;
-    
+
     query.prepare("UPDATE productivity "
-                "SET calendar = :calendar "
-                "WHERE user_id = (SELECT id FROM user WHERE userName = :username);");
-    
+                  "SET calendar = :calendar "
+                  "WHERE user_id = (SELECT id FROM user WHERE userName = :username);");
+
     query.bindValue(":calendar", cal);
     query.bindValue(":username", u.username);
 
-    
     return query.exec();
+}
+
+bool Database::saveReminders(userInfo u)
+{
+    QSqlQuery query;
+    query.prepare("UPDATE productivity SET reminders = :reminders "
+                  "WHERE user_id = (SELECT id FROM user WHERE userName = :username)");
+    query.bindValue(":reminders", u.productivity.reminders.toJson());
+    query.bindValue(":username", u.username);
+    return query.exec();
+}
+
+bool Database::updateUserProfile(const userInfo &user)
+{
+    if (!isOpen() || user.username.trimmed().isEmpty() || user.homeCity.trimmed().isEmpty())
+    {
+        return false;
+    }
+    QSqlQuery query;
+    query.prepare("UPDATE user SET email = :email, homeCity = :homeCity, work = :work "
+                  "WHERE userName = :username");
+    query.bindValue(":email", user.email.trimmed());
+    query.bindValue(":homeCity", user.homeCity.trimmed());
+    query.bindValue(":work", user.work.trimmed());
+    query.bindValue(":username", user.username);
+    return query.exec() && query.numRowsAffected() == 1;
 }
