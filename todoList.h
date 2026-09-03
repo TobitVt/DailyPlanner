@@ -4,33 +4,37 @@
 #include <QVector>
 #include <QDateTime>
 
-enum class TaskPriority {
+enum class TaskPriority
+{
     Low,
     Medium,
     High
 };
 
-struct Task {
+struct Task
+{
     QString description;
     bool done = false;
-    QDateTime dueDate;      
+    QDateTime dueDate;
     TaskPriority priority = TaskPriority::Medium;
 };
 
-class TodoList {
+class TodoList
+{
 public:
     TodoList();
 
-    int addTask(const QString& description,
+    int addTask(const QString &description,
                 TaskPriority priority = TaskPriority::Medium,
-                const QDateTime& dueDate = QDateTime());
+                const QDateTime &dueDate = QDateTime());
 
     void removeTask(int index);
     void setDone(int index, bool done = true);
     void setPriority(int index, TaskPriority priority);
-    void setDueDate(int index, const QDateTime& dueDate);
+    void setDescription(int index, const QString &description);
+    void setDueDate(int index, const QDateTime &dueDate);
 
-    const QVector<Task>& tasks() const;
+    const QVector<Task> &tasks() const;
     QVector<Task> incompleteTasks() const;
     QVector<Task> completedTasks() const;
 
@@ -41,7 +45,7 @@ public:
 
     // Serialization for storage in the Database class
     QString toJson() const;
-    static TodoList fromJson(const QString& json);
+    static TodoList fromJson(const QString &json);
 
 private:
     QVector<Task> m_tasks;
