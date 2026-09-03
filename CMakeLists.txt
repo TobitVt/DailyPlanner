@@ -20,6 +20,7 @@ add_executable(DailyPlanner
     verse.cpp
     calendar.cpp
     hourlySchedule.cpp
+    reminder.cpp
 )
 target_link_libraries(DailyPlanner PRIVATE Qt6::Core Qt6::Network Qt6::Sql)
 
@@ -34,6 +35,7 @@ add_executable(DailyPlannerGui
     verse.cpp
     calendar.cpp
     hourlySchedule.cpp
+    reminder.cpp
     welcome.ui
     signup.ui
     login.ui
