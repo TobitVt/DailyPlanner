@@ -4,41 +4,38 @@ A personalized desktop daily planner built with C++ and Qt. The application comb
 
 ## Features
 
-The project is currently an early working prototype. The CLI supports basic
-SQLite-backed registration and login. The GUI opens a dashboard and supports
-basic in-memory task interactions; the GUI authentication and persistence flow
-is still being implemented.
+The project is a working prototype with both CLI and Qt GUI applications.
+User data and productivity information are stored in SQLite.
 
 ### User Accounts
 - User registration and login
-- Basic password storage (hashing is not implemented yet)
+- SHA-256 password hashing
 - Personalized user profiles
+- Email, home city, and work city fields
 - Individual database records per user
 
 ### Task Management
 - Add and remove tasks in the GUI
 - Mark tasks as completed in the GUI
-- Priority levels and due dates are supported by the model
-- GUI persistence is not implemented yet
+- Edit priorities, due dates, and descriptions
+- SQLite persistence for task changes
 
 ### Calendar & Scheduling
-- Interactive calendar view
-- Create and manage events
-- Daily and weekly schedules
-- Event reminders
-- Import existing calendars
+- Calendar event creation, editing, and deletion
+- Hourly schedule creation, editing, and deletion
+- Separate calendar and schedule pages
+- Import events from `.ics` files through the GUI
 
 ### Calendar Import
 - Import events from `.ics` calendar files
-- Automatic event synchronization
-- Duplicate event detection
-- Bulk event importing
+- Basic `.ics` event parsing
 
 ### Weather Integration
 - Location-based weather forecasts
 - Home and work locations
 - Weather recommendations
-- Daily weather summaries
+- Weather display for home and work cities
+- Automatic current-city detection with user confirmation
 
 ### Dashboard
 - Personalized greeting
@@ -46,6 +43,7 @@ is still being implemented.
 - Upcoming events
 - Reminder notifications
 - Current weather information
+- Daily productivity analysis
 - Daily overview
 
 ## Technologies
@@ -58,31 +56,38 @@ is still being implemented.
 - JSON
 
 
-## Planned Features
+## Implemented Features
 
-- [ ] GUI user authentication and current-user handling
+- [x] GUI user authentication and current-user handling
 - [x] Basic SQLite database integration
-- [x] Dashboard UI prototype
-- [ ] GUI task persistence and task editing
-- [ ] GUI calendar and schedule integration
-- [ ] Reminder notifications
+- [x] Dashboard with task, event, schedule, reminder, and weather data
+- [x] GUI task persistence and task editing
+- [x] GUI calendar and schedule integration
+- [x] Reminder notifications
 - [x] Basic weather API integration in the CLI
-- [x] Basic `.ics` calendar import model
-- [ ] Settings page
-- [ ] Dark mode
-- [ ] Data export
+- [x] GUI `.ics` calendar import
+- [x] Settings page and profile updates
+- [x] JSON data export
+- [x] Daily analysis
+
+## Remaining Work
+
+- [ ] Automated tests
+- [ ] Month and week calendar layouts
+- [ ] Recurring reminders and snooze controls
+- [ ] Duplicate detection during calendar import
+- [ ] Weather-based schedule adjustments
+- [ ] Dark mode settings
 
 ## Current Progress
 
-The project is approximately **30% complete** against the full planned
-application. The strongest areas are the Qt/CMake setup, core data models,
-basic SQLite user/productivity storage, CLI authentication, calendar parsing,
-and the initial GUI task interactions.
+The project is approximately **75% complete** against the full planned
+application. The strongest areas are authentication, SQLite persistence,
+task management, calendar and schedule handling, reminders, weather display,
+settings, export, and the main dashboard workflow.
 
-The largest remaining work is connecting the GUI login and signup screens to
-the database, tracking the current user, loading and saving all productivity
-data, and implementing the schedule, calendar, reminders, dashboard weather,
-and daily-analysis workflows.
+The largest remaining work is automated testing, richer calendar layouts,
+recurring reminder support, and additional data-management polish.
 
 ## Building
 
@@ -92,6 +97,7 @@ and daily-analysis workflows.
 - CMake 3.16+
 - MinGW or MSVC
 - SQLite
+- An OpenWeather API key for dashboard weather
 
 ### Build Steps
 
@@ -102,6 +108,10 @@ cd build
 cmake ..
 cmake --build .
 ```
+
+To enable dashboard weather, set the `OPENWEATHER_API_KEY` environment
+variable before starting the GUI. Location detection requires an internet
+connection and uses an external IP-based location service.
 
 ## Screenshots
 
