@@ -35,6 +35,8 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
+#include <QCalendarWidget>
+#include <QSettings>
 #include <functional>
 
 MainWindow::MainWindow(Database &database, QWidget *parent)
@@ -90,6 +92,22 @@ MainWindow::MainWindow(Database &database, QWidget *parent)
     auto *addEventButton = new QPushButton("Add event", calendarPage);
     calendarButtons->insertWidget(1, addEventButton);
     connect(addEventButton, &QPushButton::clicked, this, &MainWindow::onAddEventClicked);
+    auto *monthButton = new QPushButton("Month view", calendarPage);
+    auto *weekButton = new QPushButton("Week view", calendarPage);
+    calendarButtons->insertWidget(2, monthButton);
+    calendarButtons->insertWidget(3, weekButton);
+    calendarWidget = new QCalendarWidget(calendarPage);
+    calendarWidget->setSelectedDate(QDate::currentDate());
+    calendarPage->layout()->addWidget(calendarWidget);
+    connect(calendarWidget, &QCalendarWidget::selectionChanged, this, [this]() { loadCalendarPage(); });
+    connect(monthButton, &QPushButton::clicked, this, [this]() {
+        calendarWidget->setVisible(true);
+        loadCalendarPage();
+    });
+    connect(weekButton, &QPushButton::clicked, this, [this]() {
+        calendarWidget->setVisible(false);
+        loadCalendarPage();
+    });
     schedulePage = createPage("Hourly schedule", &fullScheduleList, "Add schedule item", [this]()
                               { onAddScheduleItemClicked(); });
     remindersPage = createPage("Reminders", &remindersList, "Add reminder", [this]()
@@ -134,10 +152,25 @@ MainWindow::MainWindow(Database &database, QWidget *parent)
     settingsLayout->addWidget(saveSettingsButton);
     settingsLayout->addWidget(detectButton);
     settingsLayout->addWidget(exportButton);
+    auto *importButton = new QPushButton("Import my data", settingsPage);
+    settingsLayout->addWidget(importButton);
+    darkModeCheck = new QCheckBox("Dark mode", settingsPage);
+    darkModeCheck->setChecked(QSettings().value("darkMode", false).toBool());
+    settingsLayout->addWidget(darkModeCheck);
     settingsLayout->addWidget(settingsBack);
     connect(saveSettingsButton, &QPushButton::clicked, this, &MainWindow::saveSettings);
     connect(detectButton, &QPushButton::clicked, this, &MainWindow::detectLocation);
     connect(exportButton, &QPushButton::clicked, this, &MainWindow::exportData);
+    connect(importButton, &QPushButton::clicked, this, &MainWindow::importData);
+    connect(darkModeCheck, &QCheckBox::toggled, this, [this](bool enabled) {
+        QSettings().setValue("darkMode", enabled);
+        if (enabled) {
+            qApp->setStyleSheet("QWidget { background: #202124; color: #eeeeee; } QPushButton { background: #303134; color: #eeeeee; padding: 8px; } QListWidget, QLineEdit, QDateTimeEdit { background: #303134; color: #eeeeee; } QFrame { background: #282a2d; }");
+        } else {
+            qApp->setStyleSheet("QMainWindow, QWidget#contentWidget { background: #f0f1f4; } QFrame#sidebarFrame { background: white; border-right: 1px solid #e5e5e5; } QPushButton { text-align: left; padding: 8px 12px; border: none; border-radius: 6px; background: transparent; } QPushButton:checked { background: #2d6cdf; color: white; } QPushButton:hover:!checked { background: #f0f1f4; } QListWidget { border: none; }");
+        }
+    });
+    if (darkModeCheck->isChecked()) darkModeCheck->toggled(true);
     connect(settingsBack, &QPushButton::clicked, this, &MainWindow::showDashboardPage);
     screenStack->addWidget(settingsPage);
     weatherManager = new QNetworkAccessManager(this);
@@ -335,6 +368,15 @@ void MainWindow::loadScheduleDisplay()
     {
         ui->scheduleListWidget->addItem("No schedule items for today");
     }
+    const QVector<CalendarEvent> todayEvents = currentUser.productivity.calendar.eventsOnDate(QDate::currentDate());
+    for (const CalendarEvent &event : todayEvents)
+    {
+        const QString time = event.allDay ? "All day" : event.start.time().toString("hh:mm");
+        auto *eventItem = new QListWidgetItem(time + " - " + event.summary);
+        eventItem->setData(Qt::UserRole, -1);
+        ui->scheduleListWidget->addItem(eventItem);
+    }
+    loadCalendarDisplay();
 }
 
 void MainWindow::loadCalendarDisplay()
@@ -343,11 +385,6 @@ void MainWindow::loadCalendarDisplay()
     const QVector<CalendarEvent> todayEvents = currentUser.productivity.calendar.eventsOnDate(today);
     int eventCount = todayEvents.size();
     ui->summaryEventsLabel->setText(QString::number(eventCount) + " event" + (eventCount != 1 ? "s" : "") + " today");
-    for (const CalendarEvent &event : todayEvents)
-    {
-        const QString time = event.allDay ? "All day" : event.start.time().toString("hh:mm");
-        ui->scheduleListWidget->addItem(time + " - " + event.summary);
-    }
 }
 
 bool MainWindow::saveCurrentTasks()
@@ -672,13 +709,27 @@ void MainWindow::loadCalendarPage()
     if (!calendarList)
         return;
     calendarList->clear();
-    for (int index = 0; index < currentUser.productivity.calendar.events().size(); ++index)
+    QVector<CalendarEvent> visibleEvents;
+    if (calendarWidget && !calendarWidget->isVisible()) {
+        const QDate selected = calendarWidget->selectedDate();
+        const QDate weekStart = selected.addDays(1 - selected.dayOfWeek());
+        visibleEvents = currentUser.productivity.calendar.eventsBetween(
+            QDateTime(weekStart, QTime(0, 0)), QDateTime(weekStart.addDays(6), QTime(23, 59, 59)));
+    } else {
+        visibleEvents = currentUser.productivity.calendar.events();
+    }
+    for (int index = 0; index < visibleEvents.size(); ++index)
     {
-        const CalendarEvent &event = currentUser.productivity.calendar.events().at(index);
+        const CalendarEvent &event = visibleEvents.at(index);
         const QString start = event.allDay ? event.start.date().toString("yyyy-MM-dd")
                                            : event.start.toString("yyyy-MM-dd hh:mm");
         auto *item = new QListWidgetItem(start + " - " + event.summary, calendarList);
-        item->setData(Qt::UserRole, index);
+        int sourceIndex = 0;
+        for (; sourceIndex < currentUser.productivity.calendar.events().size(); ++sourceIndex) {
+            const CalendarEvent& source = currentUser.productivity.calendar.events().at(sourceIndex);
+            if (source.uid == event.uid && source.start == event.start && source.summary == event.summary) break;
+        }
+        item->setData(Qt::UserRole, sourceIndex);
     }
     if (calendarList->count() == 0)
         calendarList->addItem("No calendar events");
@@ -760,6 +811,22 @@ void MainWindow::loadRemindersPage()
     }
     if (remindersList->count() == 0)
         remindersList->addItem("No reminders");
+    remindersList->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(remindersList, &QListWidget::customContextMenuRequested, this, [this](const QPoint& position) {
+        QListWidgetItem* item = remindersList->itemAt(position);
+        if (!item) return;
+        QMenu menu;
+        QAction* snooze = menu.addAction("Snooze 15 minutes");
+        QAction* remove = menu.addAction("Remove");
+        QAction* selected = menu.exec(remindersList->viewport()->mapToGlobal(position));
+        const int index = item->data(Qt::UserRole).toInt();
+        if (selected == snooze) currentUser.productivity.reminders.snooze(index, 15);
+        if (selected == remove) currentUser.productivity.reminders.remove(index);
+        if (selected) {
+            database.saveReminders(currentUser);
+            loadRemindersPage();
+        }
+    }, Qt::UniqueConnection);
     connect(remindersList, &QListWidget::itemChanged, this, [this](QListWidgetItem *item)
             {
         const int index = item->data(Qt::UserRole).toInt();
@@ -800,7 +867,11 @@ void MainWindow::addReminder()
         QInputDialog::getInt(this, "Reminder time", "Minutes from now:", 60, 1, 10080, 1, &accepted) * 60);
     if (!accepted)
         return;
-    currentUser.productivity.reminders.add({text, due, false});
+    const int recurrenceDays = QInputDialog::getInt(this, "Repeat reminder",
+                                                     "Repeat every N days (0 = once):",
+                                                     0, 0, 365, 1, &accepted);
+    if (!accepted) return;
+    currentUser.productivity.reminders.add({text, due, false, recurrenceDays, {}});
     database.saveReminders(currentUser);
     loadRemindersPage();
     updateDashboardUser();
@@ -856,6 +927,43 @@ void MainWindow::exportData()
     }
     file.close();
     QMessageBox::information(this, "Export data", "Your data was exported.");
+}
+
+void MainWindow::importData()
+{
+    const QString path = QFileDialog::getOpenFileName(this, "Import data", QString(), "JSON files (*.json)");
+    if (path.isEmpty()) return;
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "Import data", "The data file could not be opened.");
+        return;
+    }
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll());
+    if (!document.isObject()) {
+        QMessageBox::warning(this, "Import data", "The file is not a valid planner export.");
+        return;
+    }
+    const QJsonObject data = document.object();
+    if (!data.contains("tasks") || !data.contains("calendar") || !data.contains("schedule") ||
+        !data.contains("reminders")) {
+        QMessageBox::warning(this, "Import data", "The export is missing planner data.");
+        return;
+    }
+    if (QMessageBox::question(this, "Import data", "Replace your current planner data?") != QMessageBox::Yes) return;
+    currentUser.productivity.todoList = TodoList::fromJson(QJsonDocument(data["tasks"].toArray()).toJson(QJsonDocument::Compact));
+    currentUser.productivity.calendar = Calendar::fromJson(QJsonDocument(data["calendar"].toArray()).toJson(QJsonDocument::Compact));
+    currentUser.productivity.hourly = HourlySchedules::fromJson(
+        QString::fromUtf8(QJsonDocument(data["schedule"].toObject()).toJson(QJsonDocument::Compact)), QDate::currentDate());
+    currentUser.productivity.reminders = Reminders::fromJson(
+        QString::fromUtf8(QJsonDocument(data["reminders"].toArray()).toJson(QJsonDocument::Compact)));
+    if (!saveCurrentTasks() || !saveCalendarAndSchedule() || !database.saveReminders(currentUser)) {
+        QMessageBox::warning(this, "Import data", "Some planner data could not be saved.");
+        return;
+    }
+    loadCurrentUser();
+    updateDashboardUser();
+    loadRemindersPage();
+    QMessageBox::information(this, "Import data", "Planner data imported.");
 }
 
 void MainWindow::detectLocation()
@@ -915,13 +1023,22 @@ QString MainWindow::weatherRecommendation(const WeatherData &data) const
     if (!data.success || data.forecast.isEmpty())
         return "No weather recommendation available.";
     const ForecastEntry &current = data.forecast.first();
-    if (current.pop >= 0.5 || current.rainVolume > 0.0)
+    bool rainExpected = false;
+    bool strongWindExpected = false;
+    double highestTemperature = current.temp;
+    for (int index = 0; index < qMin(8, data.forecast.size()); ++index) {
+        const ForecastEntry &entry = data.forecast.at(index);
+        rainExpected = rainExpected || entry.pop >= 0.5 || entry.rainVolume > 0.0;
+        strongWindExpected = strongWindExpected || entry.windSpeed >= 10.0;
+        highestTemperature = qMax(highestTemperature, entry.temp);
+    }
+    if (rainExpected)
         return "Take an umbrella and allow extra travel time.";
-    if (current.temp >= 28.0)
+    if (highestTemperature >= 28.0)
         return "Stay hydrated and avoid the hottest part of the day.";
     if (current.temp <= 5.0)
         return "Dress warmly before heading outside.";
-    if (current.windSpeed >= 10.0)
+    if (strongWindExpected)
         return "Expect strong wind; secure loose items and allow extra travel time.";
     return "Conditions look suitable for your planned activities.";
 }
@@ -934,10 +1051,22 @@ void MainWindow::checkReminders()
     for (int index = 0; index < currentUser.productivity.reminders.all().size(); ++index)
     {
         const Reminder &reminder = currentUser.productivity.reminders.all().at(index);
-        if (!reminder.completed && reminder.due.isValid() && reminder.due <= now)
+        if (!reminder.completed && reminder.due.isValid() && reminder.due <= now &&
+            (!reminder.snoozedUntil.isValid() || reminder.snoozedUntil <= now))
         {
             QMessageBox::information(this, "Reminder", reminder.text);
-            currentUser.productivity.reminders.setCompleted(index, true);
+            const Reminder& current = currentUser.productivity.reminders.all().at(index);
+            if (current.recurrenceDays == 0) {
+                currentUser.productivity.reminders.setCompleted(index, true);
+            } else {
+                Reminder next = current;
+                do {
+                    next.due = next.due.addDays(next.recurrenceDays);
+                } while (next.due <= now);
+                currentUser.productivity.reminders.remove(index);
+                currentUser.productivity.reminders.add(next);
+                --index;
+            }
             database.saveReminders(currentUser);
         }
     }
