@@ -70,7 +70,18 @@ const QVector<CalendarEvent>& Calendar::events() const {
 QVector<CalendarEvent> Calendar::eventsOnDate(const QDate& date) const {
     QVector<CalendarEvent> result;
     for (const auto& e : m_events) {
-        if (e.start.date() == date) result.push_back(e);
+        if (e.start.date() == date || (e.end.isValid() && e.start.date() <= date && e.end.date() >= date)) {
+            result.push_back(e);
+        }
+    }
+    return result;
+}
+
+QVector<CalendarEvent> Calendar::eventsBetween(const QDateTime& start, const QDateTime& end) const {
+    QVector<CalendarEvent> result;
+    for (const CalendarEvent& event : m_events) {
+        const QDateTime eventEnd = event.end.isValid() ? event.end : event.start;
+        if (event.start <= end && eventEnd >= start) result.append(event);
     }
     return result;
 }
@@ -101,6 +112,7 @@ QByteArray Calendar::toJson() const {
         obj["start"] = e.start.toString(Qt::ISODate);
         obj["end"] = e.end.toString(Qt::ISODate);
         obj["allDay"] = e.allDay;
+        obj["uid"] = e.uid;
         arr.append(obj);
     }
     return QJsonDocument(arr).toJson(QJsonDocument::Compact);
@@ -117,6 +129,7 @@ Calendar Calendar::fromJson(const QByteArray& data) {
         e.start = QDateTime::fromString(obj.value("start").toString(), Qt::ISODate);
         e.end = QDateTime::fromString(obj.value("end").toString(), Qt::ISODate);
         e.allDay = obj.value("allDay").toBool();
+        e.uid = obj.value("uid").toString();
         cal.m_events.push_back(e);
     }
     return cal;
@@ -158,7 +171,17 @@ bool Calendar::importFromIcsText(const QString& icsText) {
             if (line.compare(QStringLiteral("END:VEVENT"), Qt::CaseInsensitive) == 0 ||
                 line.compare(QStringLiteral("END:VTODO"), Qt::CaseInsensitive) == 0) {
                 const CalendarEvent event = parseVEventBlock(block);
-                if (event.start.isValid()) {
+                bool duplicate = false;
+                for (const CalendarEvent& existing : m_events) {
+                    const bool sameUid = !event.uid.isEmpty() && event.uid == existing.uid;
+                    const bool sameFields = event.uid.isEmpty() && event.summary == existing.summary &&
+                                            event.start == existing.start && event.end == existing.end;
+                    if (sameUid || sameFields) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                if (event.start.isValid() && !duplicate) {
                     addEvent(event);
                     imported = true;
                 }
@@ -181,6 +204,8 @@ CalendarEvent Calendar::parseVEventBlock(const QVector<QString>& lines) {
         const QString value = line.mid(separator + 1);
         if (property == QStringLiteral("SUMMARY")) {
             event.summary = unescapeIcsText(value);
+        } else if (property == QStringLiteral("UID")) {
+            event.uid = value;
         } else if (property == QStringLiteral("DESCRIPTION")) {
             event.description = unescapeIcsText(value);
         } else if (property == QStringLiteral("DTSTART")) {
