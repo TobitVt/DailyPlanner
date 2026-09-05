@@ -11,6 +11,7 @@ struct CalendarEvent {
     QDateTime start;
     QDateTime end;
     bool allDay = false;
+    QString uid;
 };
 
 class Calendar {
@@ -28,6 +29,7 @@ public:
 
     const QVector<CalendarEvent>& events() const;
     QVector<CalendarEvent> eventsOnDate(const QDate& date) const;
+    QVector<CalendarEvent> eventsBetween(const QDateTime& start, const QDateTime& end) const;
     QVector<CalendarEvent> upcomingEvents(int maxCount = 5) const;
 
     // Serialization for storage in the Database class 
