@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "C:/dev-builds/dailyplanner")
 
-find_package(Qt6 COMPONENTS Widgets Core Network Sql REQUIRED)
+find_package(Qt6 COMPONENTS Widgets Core Network Sql Test REQUIRED)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -41,3 +41,17 @@ add_executable(DailyPlannerGui
     login.ui
 )
 target_link_libraries(DailyPlannerGui PRIVATE Qt6::Widgets Qt6::Core Qt6::Network Qt6::Sql)
+
+enable_testing()
+add_executable(DailyPlannerTests
+    tests.cpp
+    todoList.cpp
+    calendar.cpp
+    hourlySchedule.cpp
+    reminder.cpp
+    weather.cpp
+)
+target_link_libraries(DailyPlannerTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+add_test(NAME DailyPlannerTests COMMAND DailyPlannerTests)
+set_tests_properties(DailyPlannerTests PROPERTIES
+    ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH}")
