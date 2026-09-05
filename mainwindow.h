@@ -32,6 +32,8 @@ class QNetworkAccessManager;
 class QTimer;
 class QLabel;
 class QLineEdit;
+class QCalendarWidget;
+class QCheckBox;
 
 class MainWindow : public QMainWindow
 {
@@ -70,6 +72,8 @@ private:
     QListWidget *fullScheduleList = nullptr;
     QListWidget *remindersList = nullptr;
     QListWidget *tasksPageList = nullptr;
+    QCalendarWidget *calendarWidget = nullptr;
+    QCheckBox *darkModeCheck = nullptr;
     QLabel *weatherPageLabel = nullptr;
     QLabel *analysisLabel = nullptr;
     QLineEdit *settingsEmailEdit = nullptr;
@@ -108,6 +112,7 @@ private:
     void checkReminders();
     void onCalendarItemDoubleClicked(QListWidgetItem *item);
     void exportData();
+    void importData();
     void saveSettings();
     void detectLocation();
     void loadTasksPage();
