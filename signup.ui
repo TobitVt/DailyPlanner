@@ -22,24 +22,24 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing"><number>14</number></property>
-   <property name="leftMargin"><number>40</number></property>
-   <property name="rightMargin"><number>40</number></property>
+  <property name="leftMargin"><number>8</number></property>
+  <property name="rightMargin"><number>8</number></property>
    <item>
     <widget class="QLabel" name="titleLabel">
      <property name="text"><string>Create Account</string></property>
      <property name="alignment"><set>Qt::AlignCenter</set></property>
     </widget>
    </item>
-   <item><widget class="QLineEdit" name="usernameEdit"><property name="placeholderText"><string>Username</string></property></widget></item>
-   <item><widget class="QLineEdit" name="emailEdit"><property name="placeholderText"><string>Email Address</string></property></widget></item>
-   <item><widget class="QLineEdit" name="passwordEdit"><property name="echoMode"><enum>QLineEdit::Password</enum></property><property name="placeholderText"><string>Password</string></property></widget></item>
+      <item><widget class="QLineEdit" name="usernameEdit"><property name="placeholderText"><string>Username</string></property><property name="minimumWidth"><number>378</number></property><property name="maximumWidth"><number>378</number></property><property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item>
+      <item><widget class="QLineEdit" name="emailEdit"><property name="placeholderText"><string>Email Address</string></property><property name="minimumWidth"><number>378</number></property><property name="maximumWidth"><number>378</number></property><property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item>
+      <item><widget class="QLineEdit" name="passwordEdit"><property name="echoMode"><enum>QLineEdit::Password</enum></property><property name="placeholderText"><string>Password</string></property><property name="minimumWidth"><number>378</number></property><property name="maximumWidth"><number>378</number></property><property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item>
    
    <!-- New Localised Fields -->
-   <item><widget class="QLineEdit" name="homeCityEdit"><property name="placeholderText"><string>Home City (for weather alerts)</string></property></widget></item>
-   <item><widget class="QLineEdit" name="workCityEdit"><property name="placeholderText"><string>Work City (for commute weather)</string></property></widget></item>
+      <item><widget class="QLineEdit" name="homeCityEdit"><property name="placeholderText"><string>Home City (for weather alerts)</string></property><property name="minimumWidth"><number>378</number></property><property name="maximumWidth"><number>378</number></property><property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item>
+      <item><widget class="QLineEdit" name="workCityEdit"><property name="placeholderText"><string>Work City (for commute weather)</string></property><property name="minimumWidth"><number>378</number></property><property name="maximumWidth"><number>378</number></property><property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item>
    
-   <item><widget class="QPushButton" name="submitButton"><property name="text"><string>Sign Up</string></property></widget></item>
-   <item><widget class="QPushButton" name="backButton"><property name="text"><string>← Back to Home</string></property></widget></item>
+   <item><widget class="QPushButton" name="submitButton"><property name="text"><string>Sign Up</string></property><property name="minimumWidth"><number>228</number></property><property name="maximumWidth"><number>228</number></property><property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item>
+   <item><widget class="QPushButton" name="backButton"><property name="text"><string>← Back to Home</string></property><property name="minimumWidth"><number>228</number></property><property name="maximumWidth"><number>228</number></property><property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item>
   </layout>
  </widget>
 </ui>
