@@ -13,6 +13,8 @@ private slots:
     void taskRoundTrip();
     void calendarImport();
     void duplicateCalendarImport();
+    void recurringCalendarImport();
+    void malformedCalendarImport();
     void hourlyScheduleRoundTrip();
     void remindersRoundTrip();
     void recurringReminderAdvance();
@@ -52,6 +54,24 @@ void PlannerTests::duplicateCalendarImport() {
     QVERIFY(calendar.importFromIcsText(ics));
     QVERIFY(!calendar.importFromIcsText(ics));
     QCOMPARE(calendar.events().size(), 1);
+}
+
+void PlannerTests::recurringCalendarImport() {
+    Calendar calendar;
+    const QString ics = "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:daily-1\nSUMMARY:Standup\n"
+                        "DTSTART:20260905T090000\nDTEND:20260905T093000\n"
+                        "RRULE:FREQ=DAILY;COUNT=3\nEND:VEVENT\nEND:VCALENDAR\n";
+    QVERIFY(calendar.importFromIcsText(ics));
+    QCOMPARE(calendar.eventsOnDate(QDate(2026, 9, 7)).size(), 1);
+    QCOMPARE(calendar.eventsBetween(QDateTime(QDate(2026, 9, 5), QTime(0, 0)),
+                                   QDateTime(QDate(2026, 9, 7), QTime(23, 59))).size(), 3);
+}
+
+void PlannerTests::malformedCalendarImport() {
+    Calendar calendar;
+    QVERIFY(!calendar.importFromIcsText("BEGIN:VEVENT\nSUMMARY:Missing calendar wrapper\nEND:VEVENT"));
+    QVERIFY(!calendar.importFromIcsText("BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:\n"
+                                       "DTSTART:bad\nEND:VEVENT\nEND:VCALENDAR"));
 }
 
 void PlannerTests::hourlyScheduleRoundTrip() {
