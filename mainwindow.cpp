@@ -37,6 +37,8 @@
 #include <QFile>
 #include <QCalendarWidget>
 #include <QSettings>
+#include <QGraphicsDropShadowEffect>
+#include <QFont>
 #include <functional>
 
 MainWindow::MainWindow(Database &database, QWidget *parent)
@@ -51,23 +53,55 @@ MainWindow::MainWindow(Database &database, QWidget *parent)
     QWidget *welcomePage = new QWidget(screenStack);
     welcomeUi = new Ui::WelcomeScreen;
     welcomeUi->setupUi(welcomePage);
+    welcomePage->layout()->setAlignment(welcomeUi->loginButton, Qt::AlignHCenter);
+    welcomePage->layout()->setAlignment(welcomeUi->signupButton, Qt::AlignHCenter);
     screenStack->addWidget(welcomePage);
 
     QWidget *loginPage = new QWidget(screenStack);
     loginUi = new Ui::LoginScreen;
     loginUi->setupUi(loginPage);
+    const QList<QWidget *> loginControls = {loginUi->usernameEdit, loginUi->passwordEdit,
+                                            loginUi->submitButton, loginUi->backButton};
+    for (QWidget *widget : loginControls) {
+        loginPage->layout()->setAlignment(widget, Qt::AlignHCenter);
+    }
     screenStack->addWidget(loginPage);
 
     QWidget *signupPage = new QWidget(screenStack);
     signupUi = new Ui::SignUpScreen;
     signupUi->setupUi(signupPage);
+    const QList<QWidget *> signupControls = {signupUi->usernameEdit, signupUi->emailEdit,
+                                             signupUi->passwordEdit, signupUi->homeCityEdit,
+                                             signupUi->workCityEdit, signupUi->submitButton,
+                                             signupUi->backButton};
+    for (QWidget *widget : signupControls) {
+        signupPage->layout()->setAlignment(widget, Qt::AlignHCenter);
+    }
     screenStack->addWidget(signupPage);
     setCentralWidget(screenStack);
+
+    const QString appPageStyle = "QWidget { background: #202124; color: #f2f4f8; } QLabel { color: #f2f4f8; } QListWidget { background: #2a2d33; color: #f2f4f8; border: 1px solid #3a3e46; border-radius: 10px; padding: 8px; } QPushButton { background: #2f333a; color: #f2f4f8; border: 1px solid #464b55; border-radius: 6px; padding: 8px 12px; } QPushButton:hover { background: #3a404a; } QLineEdit, QDateTimeEdit, QComboBox { background: #23262b; color: #f2f4f8; border: 1px solid #4a515d; border-radius: 5px; padding: 6px; } QCheckBox { color: #f2f4f8; }";
+
+    if (auto *row1 = findChild<QHBoxLayout *>("row1Layout")) {
+        row1->setStretch(0, 1);
+        row1->setStretch(1, 1);
+        row1->setStretch(2, 1);
+    }
+    const QList<QFrame *> cards = {ui->weatherHomeCard, ui->weatherWorkCard, ui->summaryCard,
+                                   ui->tasksCard, ui->scheduleCard, ui->reminderCard, ui->quickNoteCard};
+    for (QFrame *card : cards) {
+        auto *shadow = new QGraphicsDropShadowEffect(card);
+        shadow->setBlurRadius(16);
+        shadow->setOffset(0, 3);
+        shadow->setColor(QColor(35, 48, 71, 35));
+        card->setGraphicsEffect(shadow);
+    }
 
     auto createPage = [this](const QString &title, QListWidget **list, const QString &actionText,
                              std::function<void()> action)
     {
         QWidget *page = new QWidget(screenStack);
+        page->setStyleSheet("QWidget { background: #202124; color: #f2f4f8; } QLabel { color: #f2f4f8; } QListWidget { background: #2a2d33; color: #f2f4f8; border: 1px solid #3a3e46; border-radius: 10px; padding: 8px; } QPushButton { background: #2f333a; color: #f2f4f8; border: 1px solid #464b55; border-radius: 6px; padding: 8px 12px; } QPushButton:hover { background: #3a404a; }");
         auto *layout = new QVBoxLayout(page);
         auto *heading = new QLabel(title, page);
         heading->setStyleSheet("font-size: 22px; font-weight: 700;");
@@ -101,10 +135,12 @@ MainWindow::MainWindow(Database &database, QWidget *parent)
     calendarPage->layout()->addWidget(calendarWidget);
     connect(calendarWidget, &QCalendarWidget::selectionChanged, this, [this]() { loadCalendarPage(); });
     connect(monthButton, &QPushButton::clicked, this, [this]() {
+        calendarWeekMode = false;
         calendarWidget->setVisible(true);
         loadCalendarPage();
     });
     connect(weekButton, &QPushButton::clicked, this, [this]() {
+        calendarWeekMode = true;
         calendarWidget->setVisible(false);
         loadCalendarPage();
     });
@@ -115,16 +151,21 @@ MainWindow::MainWindow(Database &database, QWidget *parent)
     tasksPage = createPage("Tasks", &tasksPageList, "Add task", [this]()
                            { onAddTaskClicked(); });
     weatherPage = new QWidget(screenStack);
+    weatherPage->setStyleSheet(appPageStyle);
     auto *weatherLayout = new QVBoxLayout(weatherPage);
     weatherLayout->addWidget(new QLabel("Weather and recommendations", weatherPage));
     weatherPageLabel = new QLabel("Log in to load weather.", weatherPage);
     weatherPageLabel->setWordWrap(true);
     weatherLayout->addWidget(weatherPageLabel);
     auto *weatherBack = new QPushButton("Back to dashboard", weatherPage);
+    auto *weatherPlan = new QPushButton("Adjust schedule for weather", weatherPage);
     weatherLayout->addWidget(weatherBack);
+    weatherLayout->addWidget(weatherPlan);
     connect(weatherBack, &QPushButton::clicked, this, &MainWindow::showDashboardPage);
+    connect(weatherPlan, &QPushButton::clicked, this, &MainWindow::applyWeatherPlan);
     screenStack->addWidget(weatherPage);
     analysisPage = new QWidget(screenStack);
+    analysisPage->setStyleSheet(appPageStyle);
     auto *analysisLayout = new QVBoxLayout(analysisPage);
     analysisLayout->addWidget(new QLabel("Daily analysis", analysisPage));
     analysisLabel = new QLabel(analysisPage);
@@ -135,6 +176,7 @@ MainWindow::MainWindow(Database &database, QWidget *parent)
     connect(analysisBack, &QPushButton::clicked, this, &MainWindow::showDashboardPage);
     screenStack->addWidget(analysisPage);
     settingsPage = new QWidget(screenStack);
+    settingsPage->setStyleSheet(appPageStyle);
     auto *settingsLayout = new QVBoxLayout(settingsPage);
     settingsLayout->addWidget(new QLabel("Settings", settingsPage));
     auto *form = new QFormLayout();
@@ -155,20 +197,44 @@ MainWindow::MainWindow(Database &database, QWidget *parent)
     auto *importButton = new QPushButton("Import my data", settingsPage);
     settingsLayout->addWidget(importButton);
     darkModeCheck = new QCheckBox("Dark mode", settingsPage);
-    darkModeCheck->setChecked(QSettings().value("darkMode", false).toBool());
+    darkModeCheck->setChecked(QSettings().value("darkMode", true).toBool());
     settingsLayout->addWidget(darkModeCheck);
     settingsLayout->addWidget(settingsBack);
+    const QList<QPushButton *> settingsButtons = {saveSettingsButton, detectButton, exportButton,
+                                                   importButton, settingsBack};
+    for (QPushButton *button : settingsButtons) {
+        button->setMaximumWidth(240);
+        button->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        settingsLayout->setAlignment(button, Qt::AlignHCenter);
+    }
+    settingsLayout->setAlignment(darkModeCheck, Qt::AlignHCenter);
+    const QList<QFrame *> dashboardCards = {ui->userCardFrame, ui->weatherHomeCard, ui->weatherWorkCard,
+                                            ui->summaryCard, ui->tasksCard, ui->scheduleCard,
+                                            ui->reminderCard, ui->quickNoteCard};
+    const QList<QLabel *> dashboardSecondaryLabels = {ui->userEmailLabel, ui->dateLabel,
+                                                      ui->weatherHomeDetailLabel, ui->weatherWorkDetailLabel};
+    const QList<QLabel *> dashboardWeatherDescriptions = {ui->weatherHomeDescLabel, ui->weatherWorkDescLabel};
+    auto applyDashboardTheme = [dashboardCards, dashboardSecondaryLabels, dashboardWeatherDescriptions](bool dark) {
+        const QString cardStyle = dark ? "background: #2a2d33; color: #f2f4f8; border: none; border-radius: 10px;"
+                           : "background: #ffffff; color: #253047; border: none; border-radius: 10px;";
+        const QString secondaryStyle = dark ? "color: #b8c0ce;" : "color: #657089;";
+        const QString descriptionStyle = dark ? "color: #f2f4f8; font-weight: 700;" : "color: #253047; font-weight: 700;";
+        for (QFrame *card : dashboardCards) card->setStyleSheet(cardStyle);
+        for (QLabel *label : dashboardSecondaryLabels) label->setStyleSheet(secondaryStyle);
+        for (QLabel *label : dashboardWeatherDescriptions) label->setStyleSheet(descriptionStyle);
+    };
     connect(saveSettingsButton, &QPushButton::clicked, this, &MainWindow::saveSettings);
     connect(detectButton, &QPushButton::clicked, this, &MainWindow::detectLocation);
     connect(exportButton, &QPushButton::clicked, this, &MainWindow::exportData);
     connect(importButton, &QPushButton::clicked, this, &MainWindow::importData);
-    connect(darkModeCheck, &QCheckBox::toggled, this, [this](bool enabled) {
+    connect(darkModeCheck, &QCheckBox::toggled, this, [this, applyDashboardTheme](bool enabled) {
         QSettings().setValue("darkMode", enabled);
         if (enabled) {
-            qApp->setStyleSheet("QWidget { background: #202124; color: #eeeeee; } QPushButton { background: #303134; color: #eeeeee; padding: 8px; } QListWidget, QLineEdit, QDateTimeEdit { background: #303134; color: #eeeeee; } QFrame { background: #282a2d; }");
+            qApp->setStyleSheet("QMainWindow, QWidget#contentWidget { background: #202124; color: #f2f4f8; } QFrame#sidebarFrame { background: #18191c; color: #f2f4f8; border-right: 1px solid #34373d; } QFrame#userCardFrame, QFrame#weatherHomeCard, QFrame#weatherWorkCard, QFrame#summaryCard, QFrame#tasksCard, QFrame#scheduleCard, QFrame#reminderCard, QFrame#quickNoteCard { background: #2a2d33; color: #f2f4f8; border: 1px solid #3a3e46; } QLabel { color: #f2f4f8; } QLabel#userEmailLabel, QLabel#dateLabel, QLabel#weatherHomeDetailLabel, QLabel#weatherWorkDetailLabel { color: #b8c0ce; } QLabel#weatherHomeDescLabel, QLabel#weatherWorkDescLabel { color: #f2f4f8; font-weight: 700; } QLabel#userAvatarLabel { background: #4f8cff; color: #ffffff; border-radius: 16px; padding: 4px; qproperty-alignment: AlignCenter; } QPushButton { background: #2f333a; color: #f2f4f8; border: 1px solid #464b55; padding: 8px 12px; } QPushButton:checked { background: #4f8cff; color: #ffffff; } QPushButton:hover:!checked { background: #3a404a; } QPushButton#searchButton, QPushButton#notificationsButton { background: #3a404a; border: none; border-radius: 16px; min-width: 36px; min-height: 32px; padding: 4px; text-align: center; } QListWidget, QTextEdit, QLineEdit, QDateTimeEdit, QComboBox { background: #23262b; color: #f2f4f8; border: 1px solid #4a515d; }");
         } else {
-            qApp->setStyleSheet("QMainWindow, QWidget#contentWidget { background: #f0f1f4; } QFrame#sidebarFrame { background: white; border-right: 1px solid #e5e5e5; } QPushButton { text-align: left; padding: 8px 12px; border: none; border-radius: 6px; background: transparent; } QPushButton:checked { background: #2d6cdf; color: white; } QPushButton:hover:!checked { background: #f0f1f4; } QListWidget { border: none; }");
+            qApp->setStyleSheet("QMainWindow, QWidget#contentWidget { background: #f0f1f4; color: #253047; } QFrame#sidebarFrame { background: #ffffff; color: #253047; border-right: 1px solid #dfe3eb; } QFrame#userCardFrame, QFrame#weatherHomeCard, QFrame#weatherWorkCard, QFrame#summaryCard, QFrame#tasksCard, QFrame#scheduleCard, QFrame#reminderCard, QFrame#quickNoteCard { background: #ffffff; color: #253047; border: 1px solid #e2e6ed; } QLabel { color: #253047; } QLabel#userEmailLabel, QLabel#dateLabel, QLabel#weatherHomeDetailLabel, QLabel#weatherWorkDetailLabel { color: #657089; } QLabel#userAvatarLabel { background: #2d6cdf; color: #ffffff; border-radius: 16px; padding: 4px; qproperty-alignment: AlignCenter; } QPushButton { color: #253047; text-align: left; padding: 8px 12px; border: 1px solid transparent; border-radius: 6px; background: transparent; } QPushButton:checked { background: #2d6cdf; color: #ffffff; } QPushButton:hover:!checked { background: #e9eefb; border-color: #c7d5f5; } QPushButton#searchButton, QPushButton#notificationsButton { background: #ffffff; border: 1px solid #d6dce8; min-width: 36px; min-height: 32px; padding: 4px; text-align: center; } QListWidget, QTextEdit { color: #253047; background: #ffffff; border: 1px solid #e2e6ed; } QLineEdit, QDateTimeEdit, QComboBox { color: #253047; background: #ffffff; border: 1px solid #cdd4e0; padding: 5px; }");
         }
+        applyDashboardTheme(enabled);
     });
     if (darkModeCheck->isChecked()) darkModeCheck->toggled(true);
     connect(settingsBack, &QPushButton::clicked, this, &MainWindow::showDashboardPage);
@@ -213,6 +279,18 @@ MainWindow::MainWindow(Database &database, QWidget *parent)
     connect(ui->viewCalendarButton, &QPushButton::clicked, this, &MainWindow::showCalendarPage);
     connect(ui->searchButton, &QPushButton::clicked, this, &MainWindow::showTasksPage);
     connect(ui->notificationsButton, &QPushButton::clicked, this, &MainWindow::showRemindersPage);
+    const QList<QPushButton *> navigationButtons = {ui->navDashboardButton, ui->navTasksButton,
+                                                    ui->navCalendarButton, ui->navRemindersButton,
+                                                    ui->navWeatherButton, ui->navSettingsButton};
+    for (QPushButton *button : navigationButtons) button->setCheckable(false);
+    ui->searchButton->setToolTip("Open tasks");
+    ui->notificationsButton->setToolTip("Open reminders");
+    ui->navDashboardButton->setAccessibleName("Dashboard");
+    ui->navTasksButton->setAccessibleName("Tasks");
+    ui->navCalendarButton->setAccessibleName("Calendar");
+    ui->navRemindersButton->setAccessibleName("Reminders");
+    ui->navWeatherButton->setAccessibleName("Weather");
+    ui->navSettingsButton->setAccessibleName("Settings");
     auto *analysisButton = new QPushButton("Daily analysis", ui->centralwidget);
     auto *topBar = qobject_cast<QHBoxLayout *>(ui->topBarLayout);
     topBar->insertWidget(2, analysisButton);
@@ -330,6 +408,7 @@ void MainWindow::onLogoutClicked()
     ui->greetingLabel->setText("Welcome!");
     ui->summaryTasksLabel->setText("No tasks loaded");
     ui->summaryEventsLabel->setText("No events loaded");
+    ui->summaryReminderLabel->setText("No reminders loaded");
     showWelcomeScreen();
 }
 
@@ -342,7 +421,6 @@ void MainWindow::loadCurrentUser()
         addTaskToList(task.description, task.done);
     }
     loadScheduleDisplay();
-    loadCalendarDisplay();
 }
 
 void MainWindow::loadScheduleDisplay()
@@ -423,12 +501,24 @@ bool MainWindow::saveCalendarAndSchedule()
 void MainWindow::updateDashboardUser()
 {
     ui->userNameLabel->setText(currentUser.username);
-    ui->userEmailLabel->setText("Home: " + currentUser.homeCity + " | Work: " + currentUser.work);
+    ui->userEmailLabel->setText(currentUser.email.isEmpty() ? "No email set" : currentUser.email);
+    ui->userEmailLabel->setToolTip("Home: " + currentUser.homeCity + " | Work: " + currentUser.work);
     updateGreeting();
     ui->summaryTasksLabel->setText(QString::number(currentUser.productivity.todoList.count()) +
                                    " tasks");
-    ui->summaryEventsLabel->setText(QString::number(currentUser.productivity.calendar.events().size()) +
-                                    " events");
+    const int eventCount = currentUser.productivity.calendar.eventsOnDate(QDate::currentDate()).size();
+    ui->summaryEventsLabel->setText(QString::number(eventCount) +
+                                    " event" + (eventCount == 1 ? "" : "s") + " today");
+    const QVector<Reminder> upcoming = currentUser.productivity.reminders.upcoming(1);
+    ui->summaryReminderLabel->setText(QString::number(upcoming.size()) +
+                                      " reminder" + (upcoming.size() == 1 ? "" : "s"));
+    if (upcoming.isEmpty()) {
+        ui->reminderTimeLabel->setText("--:--");
+        ui->reminderTextLabel->setText("No upcoming reminders");
+    } else {
+        ui->reminderTimeLabel->setText(upcoming.first().due.toString("hh:mm"));
+        ui->reminderTextLabel->setText(upcoming.first().text);
+    }
     if (ui->summaryReminderLabel)
     {
         ui->summaryReminderLabel->setText("No reminders loaded");
@@ -466,6 +556,7 @@ void MainWindow::onAddTaskClicked()
     currentUser.productivity.todoList.addTask(text);
     addTaskToList(text);
     saveCurrentTasks();
+    updateDashboardUser();
 }
 
 void MainWindow::onTaskListContextMenuRequested(const QPoint &position)
@@ -487,6 +578,7 @@ void MainWindow::onTaskListContextMenuRequested(const QPoint &position)
             currentUser.productivity.todoList.removeTask(row);
             delete ui->tasksListWidget->takeItem(row);
             saveCurrentTasks();
+            updateDashboardUser();
         }
     }
 }
@@ -505,6 +597,7 @@ void MainWindow::onTaskItemChanged(QListWidgetItem *item)
     const int row = ui->tasksListWidget->row(item);
     currentUser.productivity.todoList.setDone(row, isDone);
     saveCurrentTasks();
+    updateDashboardUser();
 }
 
 void MainWindow::onTaskDoubleClicked(QListWidgetItem *item)
@@ -561,6 +654,7 @@ void MainWindow::onTaskDoubleClicked(QListWidgetItem *item)
         currentUser.productivity.todoList.setDueDate(row, dueDateEdit.dateTime());
         saveCurrentTasks();
         item->setText(descEdit.text().trimmed());
+        updateDashboardUser();
     }
 }
 
@@ -618,6 +712,19 @@ void MainWindow::onAddEventClicked()
     allDayCombo.addItem("Yes");
     layout.addWidget(&allDayCombo);
 
+    layout.addWidget(new QLabel("Repeat:"));
+    QComboBox recurrenceCombo;
+    recurrenceCombo.addItem("Never", 0);
+    recurrenceCombo.addItem("Daily", 1);
+    recurrenceCombo.addItem("Weekly", 7);
+    layout.addWidget(&recurrenceCombo);
+
+    layout.addWidget(new QLabel("Occurrences (0 = 1 year):"));
+    QSpinBox recurrenceCount;
+    recurrenceCount.setRange(0, 366);
+    recurrenceCount.setValue(0);
+    layout.addWidget(&recurrenceCount);
+
     QHBoxLayout buttonLayout;
     QPushButton saveBtn("Create");
     QPushButton cancelBtn("Cancel");
@@ -642,10 +749,12 @@ void MainWindow::onAddEventClicked()
         event.start = startEdit.dateTime();
         event.end = endEdit.dateTime();
         event.allDay = (allDayCombo.currentIndex() == 1);
+        event.recurrenceDays = recurrenceCombo.currentData().toInt();
+        event.recurrenceCount = recurrenceCount.value();
 
         currentUser.productivity.calendar.addEvent(event);
         saveCalendarAndSchedule();
-        loadCalendarDisplay();
+        loadScheduleDisplay();
         loadCalendarPage();
         QMessageBox::information(this, "Event added", "Calendar event has been added.");
     }
@@ -710,14 +819,22 @@ void MainWindow::loadCalendarPage()
         return;
     calendarList->clear();
     QVector<CalendarEvent> visibleEvents;
-    if (calendarWidget && !calendarWidget->isVisible()) {
+    if (calendarWidget && calendarWeekMode) {
         const QDate selected = calendarWidget->selectedDate();
         const QDate weekStart = selected.addDays(1 - selected.dayOfWeek());
         visibleEvents = currentUser.productivity.calendar.eventsBetween(
             QDateTime(weekStart, QTime(0, 0)), QDateTime(weekStart.addDays(6), QTime(23, 59, 59)));
+    } else if (calendarWidget) {
+        const QDate selected = calendarWidget->selectedDate();
+        const QDate monthStart(selected.year(), selected.month(), 1);
+        visibleEvents = currentUser.productivity.calendar.eventsBetween(
+            QDateTime(monthStart, QTime(0, 0)),
+            QDateTime(monthStart.addMonths(1).addDays(-1), QTime(23, 59, 59)));
     } else {
         visibleEvents = currentUser.productivity.calendar.events();
     }
+    auto *heading = qobject_cast<QLabel *>(calendarPage->layout()->itemAt(0)->widget());
+    if (heading) heading->setText(calendarWeekMode ? "Calendar - Week view" : "Calendar - Month view");
     for (int index = 0; index < visibleEvents.size(); ++index)
     {
         const CalendarEvent &event = visibleEvents.at(index);
@@ -733,6 +850,7 @@ void MainWindow::loadCalendarPage()
     }
     if (calendarList->count() == 0)
         calendarList->addItem("No calendar events");
+    QObject::disconnect(calendarList, nullptr, this, nullptr);
     connect(calendarList, &QListWidget::itemDoubleClicked, this,
             &MainWindow::onCalendarItemDoubleClicked, Qt::UniqueConnection);
     calendarList->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -749,7 +867,7 @@ void MainWindow::loadCalendarPage()
             loadCalendarPage();
             loadCurrentUser();
             updateDashboardUser();
-        } }, Qt::UniqueConnection);
+        } });
 }
 
 void MainWindow::loadTasksPage()
@@ -766,12 +884,13 @@ void MainWindow::loadTasksPage()
     }
     if (tasksPageList->count() == 0)
         tasksPageList->addItem("No tasks");
+    QObject::disconnect(tasksPageList, nullptr, this, nullptr);
     connect(tasksPageList, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem *item)
             {
         const int index = item->data(Qt::UserRole).toInt();
         if (index < 0 || index >= currentUser.productivity.todoList.tasks().size()) return;
         onTaskDoubleClicked(ui->tasksListWidget->item(index));
-        loadTasksPage(); }, Qt::UniqueConnection);
+        loadTasksPage(); });
 }
 
 void MainWindow::loadFullSchedulePage()
@@ -791,6 +910,7 @@ void MainWindow::loadFullSchedulePage()
     }
     if (fullScheduleList->count() == 0)
         fullScheduleList->addItem("No schedule items");
+    QObject::disconnect(fullScheduleList, nullptr, this, nullptr);
     connect(fullScheduleList, &QListWidget::itemDoubleClicked, this,
             &MainWindow::onScheduleItemDoubleClicked, Qt::UniqueConnection);
 }
@@ -799,6 +919,7 @@ void MainWindow::loadRemindersPage()
 {
     if (!remindersList)
         return;
+    QSignalBlocker listBlocker(remindersList);
     remindersList->clear();
     for (int index = 0; index < currentUser.productivity.reminders.all().size(); ++index)
     {
@@ -811,22 +932,27 @@ void MainWindow::loadRemindersPage()
     }
     if (remindersList->count() == 0)
         remindersList->addItem("No reminders");
+    QObject::disconnect(remindersList, nullptr, this, nullptr);
     remindersList->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(remindersList, &QListWidget::customContextMenuRequested, this, [this](const QPoint& position) {
         QListWidgetItem* item = remindersList->itemAt(position);
         if (!item) return;
         QMenu menu;
-        QAction* snooze = menu.addAction("Snooze 15 minutes");
+        QAction* snooze = menu.addAction("Snooze...");
         QAction* remove = menu.addAction("Remove");
         QAction* selected = menu.exec(remindersList->viewport()->mapToGlobal(position));
         const int index = item->data(Qt::UserRole).toInt();
-        if (selected == snooze) currentUser.productivity.reminders.snooze(index, 15);
+        if (selected == snooze) {
+            bool accepted = false;
+            const int minutes = QInputDialog::getInt(this, "Snooze reminder", "Minutes:", 15, 1, 10080, 1, &accepted);
+            if (accepted) currentUser.productivity.reminders.snooze(index, minutes);
+        }
         if (selected == remove) currentUser.productivity.reminders.remove(index);
         if (selected) {
             database.saveReminders(currentUser);
             loadRemindersPage();
         }
-    }, Qt::UniqueConnection);
+    });
     connect(remindersList, &QListWidget::itemChanged, this, [this](QListWidgetItem *item)
             {
         const int index = item->data(Qt::UserRole).toInt();
@@ -834,7 +960,41 @@ void MainWindow::loadRemindersPage()
             currentUser.productivity.reminders.setCompleted(index, item->checkState() == Qt::Checked);
             database.saveReminders(currentUser);
             loadRemindersPage();
-        } }, Qt::UniqueConnection);
+        } });
+    connect(remindersList, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
+        const int index = item->data(Qt::UserRole).toInt();
+        if (index < 0 || index >= currentUser.productivity.reminders.all().size()) return;
+        const Reminder old = currentUser.productivity.reminders.all().at(index);
+        QDialog dialog(this);
+        QVBoxLayout layout(&dialog);
+        QLineEdit textEdit(old.text);
+        QDateTimeEdit dueEdit(old.due);
+        QSpinBox repeatEdit;
+        repeatEdit.setRange(0, 365);
+        repeatEdit.setValue(old.recurrenceDays);
+        layout.addWidget(new QLabel("Reminder:"));
+        layout.addWidget(&textEdit);
+        layout.addWidget(new QLabel("Due:"));
+        dueEdit.setCalendarPopup(true);
+        layout.addWidget(&dueEdit);
+        layout.addWidget(new QLabel("Repeat every N days (0 = once):"));
+        layout.addWidget(&repeatEdit);
+        QPushButton save("Save", &dialog);
+        QPushButton cancel("Cancel", &dialog);
+        layout.addWidget(&save);
+        layout.addWidget(&cancel);
+        connect(&save, &QPushButton::clicked, &dialog, &QDialog::accept);
+        connect(&cancel, &QPushButton::clicked, &dialog, &QDialog::reject);
+        if (dialog.exec() != QDialog::Accepted || textEdit.text().trimmed().isEmpty()) return;
+        Reminder updated = old;
+        updated.text = textEdit.text().trimmed();
+        updated.due = dueEdit.dateTime();
+        updated.recurrenceDays = repeatEdit.value();
+        currentUser.productivity.reminders.remove(index);
+        currentUser.productivity.reminders.add(updated);
+        database.saveReminders(currentUser);
+        loadRemindersPage();
+    });
 }
 
 void MainWindow::importCalendar()
@@ -849,7 +1009,7 @@ void MainWindow::importCalendar()
     }
     if (saveCalendarAndSchedule())
     {
-        loadCalendarDisplay();
+        loadScheduleDisplay();
         loadCalendarPage();
         QMessageBox::information(this, "Import calendar", "Calendar events imported.");
     }
@@ -944,8 +1104,8 @@ void MainWindow::importData()
         return;
     }
     const QJsonObject data = document.object();
-    if (!data.contains("tasks") || !data.contains("calendar") || !data.contains("schedule") ||
-        !data.contains("reminders")) {
+    if (!data.value("tasks").isArray() || !data.value("calendar").isArray() ||
+        !data.value("schedule").isObject() || !data.value("reminders").isArray()) {
         QMessageBox::warning(this, "Import data", "The export is missing planner data.");
         return;
     }
@@ -956,7 +1116,7 @@ void MainWindow::importData()
         QString::fromUtf8(QJsonDocument(data["schedule"].toObject()).toJson(QJsonDocument::Compact)), QDate::currentDate());
     currentUser.productivity.reminders = Reminders::fromJson(
         QString::fromUtf8(QJsonDocument(data["reminders"].toArray()).toJson(QJsonDocument::Compact)));
-    if (!saveCurrentTasks() || !saveCalendarAndSchedule() || !database.saveReminders(currentUser)) {
+    if (!database.saveProductivity(currentUser)) {
         QMessageBox::warning(this, "Import data", "Some planner data could not be saved.");
         return;
     }
@@ -1080,6 +1240,11 @@ void MainWindow::requestWeather(const QString &city, bool home)
     QLabel *tempLabel = home ? ui->weatherHomeTempLabel : ui->weatherWorkTempLabel;
     QLabel *descLabel = home ? ui->weatherHomeDescLabel : ui->weatherWorkDescLabel;
     QLabel *detailLabel = home ? ui->weatherHomeDetailLabel : ui->weatherWorkDetailLabel;
+    QLabel *titleLabel = home ? ui->weatherHomeTitleLabel : ui->weatherWorkTitleLabel;
+    titleLabel->setText((home ? "Weather - Home: " : "Weather - Work: ") + city);
+    QFont descriptionFont = descLabel->font();
+    descriptionFont.setBold(true);
+    descLabel->setFont(descriptionFont);
     if (apiKey.isEmpty() || city.isEmpty())
     {
         tempLabel->setText("Unavailable");
@@ -1102,15 +1267,20 @@ void MainWindow::requestWeather(const QString &city, bool home)
             detailLabel->clear();
         } else {
             const WeatherData data = parseWeatherData(reply->readAll());
+            if (home) latestHomeWeather = data;
+            else latestWorkWeather = data;
             if (data.success && !data.forecast.isEmpty()) {
                 const ForecastEntry& current = data.forecast.first();
+                QString description = current.description.trimmed();
+                if (!description.isEmpty()) {
+                    description[0] = description[0].toUpper();
+                }
                 tempLabel->setText(QString::number(current.temp, 'f', 1) + " C");
-                descLabel->setText(current.description + ", feels like " +
+                descLabel->setText(description + ", feels like " +
                                    QString::number(current.feelsLike, 'f', 1) + " C");
                 detailLabel->setText(QString::number(current.humidity) + "% humidity | " +
                                      QString::number(current.windSpeed * 3.6, 'f', 1) + " km/h wind | " +
-                                     QString::number(current.pop * 100, 'f', 0) + "% rain chance | " +
-                                     weatherRecommendation(data));
+                                     QString::number(current.pop * 100, 'f', 0) + "% rain chance");
             } else {
                 tempLabel->setText("Unavailable");
                 descLabel->setText(data.errorMessage.isEmpty() ? "Weather data unavailable" : data.errorMessage);
@@ -1118,6 +1288,36 @@ void MainWindow::requestWeather(const QString &city, bool home)
             }
         }
         reply->deleteLater(); });
+}
+
+void MainWindow::applyWeatherPlan()
+{
+    const WeatherData& weather = latestHomeWeather.success ? latestHomeWeather : latestWorkWeather;
+    if (!weather.success || weather.forecast.isEmpty()) {
+        QMessageBox::information(this, "Weather plan", "Weather data is not available yet.");
+        return;
+    }
+    const QString recommendation = weatherRecommendation(weather);
+    if (!recommendation.contains("umbrella", Qt::CaseInsensitive) &&
+        !recommendation.contains("wind", Qt::CaseInsensitive)) {
+        QMessageBox::information(this, "Weather plan", recommendation);
+        return;
+    }
+    if (QMessageBox::question(this, "Weather plan",
+                              recommendation + "\nShift scheduled items one hour later?") != QMessageBox::Yes) return;
+    const QMap<int, HourlyTask> existing = currentUser.productivity.hourly.allTasks();
+    const QList<int> hours = existing.keys();
+    for (int position = hours.size() - 1; position >= 0; --position) {
+        const int hour = hours.at(position);
+        if (hour >= 23 || existing.contains(hour + 1)) continue;
+        currentUser.productivity.hourly.setTask(hour + 1, existing.value(hour).description);
+        currentUser.productivity.hourly.markDone(hour + 1, existing.value(hour).done);
+        currentUser.productivity.hourly.removeTask(hour);
+    }
+    saveCalendarAndSchedule();
+    loadScheduleDisplay();
+    loadFullSchedulePage();
+    QMessageBox::information(this, "Weather plan", "Available schedule items were shifted one hour later.");
 }
 
 void MainWindow::onScheduleItemDoubleClicked(QListWidgetItem *item)
