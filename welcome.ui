@@ -20,33 +20,17 @@
    </string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="leftMargin"><number>40</number></property>
+   <property name="leftMargin"><number>12</number></property>
    <property name="topMargin"><number>60</number></property>
-   <property name="rightMargin"><number>40</number></property>
+   <property name="rightMargin"><number>12</number></property>
    <property name="bottomMargin"><number>60</number></property>
-   <item>
-    <spacer name="spacer1"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer>
-   </item>
-   <item>
-    <widget class="QLabel" name="titleLabel">
-     <property name="text"><string>Skyline App</string></property>
-     <property name="alignment"><set>Qt::AlignCenter</set></property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="subtitleLabel">
-     <property name="text"><string>Your localized weather &amp; workflow hub</string></property>
-     <property name="alignment"><set>Qt::AlignCenter</set></property>
-    </widget>
-   </item>
-   <item>
-    <spacer name="spacer2"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer>
-   </item>
-   <item><widget class="QPushButton" name="loginButton"><property name="text"><string>Sign In</string></property></widget></item>
-   <item><widget class="QPushButton" name="signupButton"><property name="text"><string>Create Account</string></property></widget></item>
-   <item>
-    <spacer name="spacer3"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer>
-   </item>
+   <item><spacer name="spacer1"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item>
+   <item><widget class="QLabel" name="titleLabel"><property name="text"><string>Skyline App</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+   <item><widget class="QLabel" name="subtitleLabel"><property name="text"><string>Your localized weather &amp; workflow hub</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+   <item><spacer name="spacer2"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item>
+   <item><widget class="QPushButton" name="loginButton"><property name="text"><string>Sign In</string></property><property name="minimumWidth"><number>228</number></property><property name="maximumWidth"><number>228</number></property><property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item>
+   <item><widget class="QPushButton" name="signupButton"><property name="text"><string>Create Account</string></property><property name="minimumWidth"><number>228</number></property><property name="maximumWidth"><number>228</number></property><property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item>
+   <item><spacer name="spacer3"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item>
   </layout>
  </widget>
 </ui>
