@@ -286,3 +286,28 @@ bool Database::updateUserProfile(const userInfo &user)
     query.bindValue(":username", user.username);
     return query.exec() && query.numRowsAffected() == 1;
 }
+
+bool Database::saveProductivity(const userInfo& user)
+{
+    if (!isOpen() || user.username.trimmed().isEmpty()) return false;
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.transaction()) return false;
+    QSqlQuery query;
+    query.prepare("UPDATE productivity SET calendar = :calendar, hourly_tasks = :hourly, "
+                  "todoList = :tasks, reminders = :reminders "
+                  "WHERE user_id = (SELECT id FROM user WHERE userName = :username)");
+    query.bindValue(":calendar", user.productivity.calendar.toJson());
+    query.bindValue(":hourly", user.productivity.hourly.toJson());
+    query.bindValue(":tasks", user.productivity.todoList.toJson());
+    query.bindValue(":reminders", user.productivity.reminders.toJson());
+    query.bindValue(":username", user.username);
+    if (!query.exec() || query.numRowsAffected() != 1) {
+        db.rollback();
+        return false;
+    }
+    if (!db.commit()) {
+        db.rollback();
+        return false;
+    }
+    return true;
+}
