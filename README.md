@@ -25,10 +25,14 @@ User data and productivity information are stored in SQLite.
 - Hourly schedule creation, editing, and deletion
 - Separate calendar and schedule pages
 - Import events from `.ics` files through the GUI
+- Month and week calendar filtering
+- Daily and weekly recurring events
 
 ### Calendar Import
 - Import events from `.ics` calendar files
 - Basic `.ics` event parsing
+- Duplicate event detection
+- Validation of malformed calendar input
 
 ### Weather Integration
 - Location-based weather forecasts
@@ -36,6 +40,7 @@ User data and productivity information are stored in SQLite.
 - Weather recommendations
 - Weather display for home and work cities
 - Automatic current-city detection with user confirmation
+- Weather-aware schedule shifting with confirmation
 
 ### Dashboard
 - Personalized greeting
@@ -69,25 +74,40 @@ User data and productivity information are stored in SQLite.
 - [x] Settings page and profile updates
 - [x] JSON data export
 - [x] Daily analysis
+- [x] Month and week calendar views
+- [x] Recurring reminders and custom snooze times
+- [x] Duplicate calendar import detection
+- [x] JSON data import with transactional saving
+- [x] Dark mode
+- [x] Weather-aware schedule adjustments
 
 ## Remaining Work
 
-- [ ] Automated tests
-- [ ] Month and week calendar layouts
-- [ ] Recurring reminders and snooze controls
-- [ ] Duplicate detection during calendar import
-- [ ] Weather-based schedule adjustments
-- [ ] Dark mode settings
+- [x] Automated model tests
+- [ ] Richer calendar grid styling
+- [ ] Recurring calendar exceptions and advanced ICS rules
+- [ ] Full GUI integration tests
 
 ## Current Progress
 
-The project is approximately **75% complete** against the full planned
+The project is approximately **90% complete** against the full planned
 application. The strongest areas are authentication, SQLite persistence,
 task management, calendar and schedule handling, reminders, weather display,
 settings, export, and the main dashboard workflow.
 
-The largest remaining work is automated testing, richer calendar layouts,
-recurring reminder support, and additional data-management polish.
+The largest remaining work is richer calendar styling, advanced ICS recurrence
+rules, and full GUI integration testing.
+
+## Verification
+
+- CLI build: passed
+- GUI build: passed
+- Automated model tests: passed
+- GUI startup smoke check: passed
+- CMake diagnostics: none reported
+
+Full interactive GUI workflows, including clicking through modal dialogs and
+network-dependent weather/location actions, still need manual verification.
 
 ## Building
 
