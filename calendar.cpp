@@ -70,8 +70,17 @@ const QVector<CalendarEvent>& Calendar::events() const {
 QVector<CalendarEvent> Calendar::eventsOnDate(const QDate& date) const {
     QVector<CalendarEvent> result;
     for (const auto& e : m_events) {
-        if (e.start.date() == date || (e.end.isValid() && e.start.date() <= date && e.end.date() >= date)) {
-            result.push_back(e);
+        const int count = e.recurrenceDays > 0 ? (e.recurrenceCount > 0 ? e.recurrenceCount : 366) : 1;
+        for (int occurrence = 0; occurrence < count; ++occurrence) {
+            const QDateTime start = e.start.addDays(occurrence * e.recurrenceDays);
+            const QDateTime end = e.end.addDays(occurrence * e.recurrenceDays);
+            if (start.date() == date || (end.isValid() && start.date() <= date && end.date() >= date)) {
+                CalendarEvent copy = e;
+                copy.start = start;
+                copy.end = end;
+                result.push_back(copy);
+                break;
+            }
         }
     }
     return result;
@@ -80,8 +89,14 @@ QVector<CalendarEvent> Calendar::eventsOnDate(const QDate& date) const {
 QVector<CalendarEvent> Calendar::eventsBetween(const QDateTime& start, const QDateTime& end) const {
     QVector<CalendarEvent> result;
     for (const CalendarEvent& event : m_events) {
-        const QDateTime eventEnd = event.end.isValid() ? event.end : event.start;
-        if (event.start <= end && eventEnd >= start) result.append(event);
+        const int count = event.recurrenceDays > 0 ? (event.recurrenceCount > 0 ? event.recurrenceCount : 366) : 1;
+        for (int occurrence = 0; occurrence < count; ++occurrence) {
+            CalendarEvent copy = event;
+            copy.start = event.start.addDays(occurrence * event.recurrenceDays);
+            copy.end = event.end.addDays(occurrence * event.recurrenceDays);
+            const QDateTime eventEnd = copy.end.isValid() ? copy.end : copy.start;
+            if (copy.start <= end && eventEnd >= start) result.append(copy);
+        }
     }
     return result;
 }
@@ -113,6 +128,8 @@ QByteArray Calendar::toJson() const {
         obj["end"] = e.end.toString(Qt::ISODate);
         obj["allDay"] = e.allDay;
         obj["uid"] = e.uid;
+        obj["recurrenceDays"] = e.recurrenceDays;
+        obj["recurrenceCount"] = e.recurrenceCount;
         arr.append(obj);
     }
     return QJsonDocument(arr).toJson(QJsonDocument::Compact);
@@ -130,6 +147,8 @@ Calendar Calendar::fromJson(const QByteArray& data) {
         e.end = QDateTime::fromString(obj.value("end").toString(), Qt::ISODate);
         e.allDay = obj.value("allDay").toBool();
         e.uid = obj.value("uid").toString();
+        e.recurrenceDays = obj.value("recurrenceDays").toInt();
+        e.recurrenceCount = obj.value("recurrenceCount").toInt();
         cal.m_events.push_back(e);
     }
     return cal;
@@ -147,6 +166,7 @@ bool Calendar::importFromFile(const QString& filePath) {
 }
 
 bool Calendar::importFromIcsText(const QString& icsText) {
+    if (!icsText.contains(QStringLiteral("BEGIN:VCALENDAR"), Qt::CaseInsensitive)) return false;
     QVector<QString> block;
     bool imported = false;
     const QStringList rawLines = icsText.split(QLatin1Char('\n'));
@@ -181,7 +201,8 @@ bool Calendar::importFromIcsText(const QString& icsText) {
                         break;
                     }
                 }
-                if (event.start.isValid() && !duplicate) {
+                if (event.start.isValid() && event.end.isValid() && event.end >= event.start &&
+                    !event.summary.trimmed().isEmpty() && !duplicate) {
                     addEvent(event);
                     imported = true;
                 }
@@ -206,6 +227,18 @@ CalendarEvent Calendar::parseVEventBlock(const QVector<QString>& lines) {
             event.summary = unescapeIcsText(value);
         } else if (property == QStringLiteral("UID")) {
             event.uid = value;
+        } else if (property == QStringLiteral("RRULE")) {
+            const QStringList parts = value.split(QLatin1Char(';'));
+            for (const QString& part : parts) {
+                const QStringList rule = part.split(QLatin1Char('='));
+                if (rule.size() != 2) continue;
+                if (rule[0].compare(QStringLiteral("FREQ"), Qt::CaseInsensitive) == 0) {
+                    if (rule[1].compare(QStringLiteral("DAILY"), Qt::CaseInsensitive) == 0) event.recurrenceDays = 1;
+                    if (rule[1].compare(QStringLiteral("WEEKLY"), Qt::CaseInsensitive) == 0) event.recurrenceDays = 7;
+                } else if (rule[0].compare(QStringLiteral("COUNT"), Qt::CaseInsensitive) == 0) {
+                    event.recurrenceCount = qMax(0, rule[1].toInt());
+                }
+            }
         } else if (property == QStringLiteral("DESCRIPTION")) {
             event.description = unescapeIcsText(value);
         } else if (property == QStringLiteral("DTSTART")) {
