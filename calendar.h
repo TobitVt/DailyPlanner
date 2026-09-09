@@ -12,6 +12,8 @@ struct CalendarEvent {
     QDateTime end;
     bool allDay = false;
     QString uid;
+    int recurrenceDays = 0;
+    int recurrenceCount = 0;
 };
 
 class Calendar {
