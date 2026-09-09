@@ -74,6 +74,9 @@ private:
     QListWidget *tasksPageList = nullptr;
     QCalendarWidget *calendarWidget = nullptr;
     QCheckBox *darkModeCheck = nullptr;
+    bool calendarWeekMode = false;
+    WeatherData latestHomeWeather;
+    WeatherData latestWorkWeather;
     QLabel *weatherPageLabel = nullptr;
     QLabel *analysisLabel = nullptr;
     QLineEdit *settingsEmailEdit = nullptr;
@@ -118,4 +121,5 @@ private:
     void loadTasksPage();
     void buildDailyAnalysis();
     QString weatherRecommendation(const WeatherData &data) const;
+    void applyWeatherPlan();
 };
