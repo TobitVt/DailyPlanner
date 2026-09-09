@@ -49,6 +49,7 @@ public:
     bool saveHourlySchedules(QMap<int, QString> hourly, userInfo u);
     bool saveCalendar(QByteArray cal, userInfo u);
     bool saveReminders(userInfo u);
+    bool saveProductivity(const userInfo& user);
     bool updateUserProfile(const userInfo &user);
 
 private:
